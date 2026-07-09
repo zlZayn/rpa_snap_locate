@@ -1,0 +1,12 @@
+screen:
+  logical_width: 1920
+  logical_height: 1080
+  dpi_scale: auto
+
+paths:
+  recordings_dir: data/recordings/
+  workflows_dir: data/workflows/
+  logs_dir: logs/
+
+recorder:
+  box_select_timeout_seconds: 10

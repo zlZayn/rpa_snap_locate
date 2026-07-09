@@ -1,0 +1,16 @@
+[project]
+name = "rpa-snap-locate"
+version = "0.1.0"
+description = "Lightweight visual-driven desktop automation recorder"
+requires-python = ">=3.11"
+dependencies = [
+    "mss>=9.0.0",
+    "pygetwindow>=0.0.9",
+    "pyautogui>=0.9.54",
+    "keyboard>=0.13.5",
+    "pyyaml>=6.0",
+    "pillow>=10.0.0",
+]
+
+[project.scripts]
+rpa-record = "main:main"
