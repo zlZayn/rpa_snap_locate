@@ -105,9 +105,16 @@ Recording produces only a JSON file in `data/workflows/` — no images. Images a
 
 ## Module-by-Module
 
-### Config — `config/config_manager.py`
+### Config — `config/config_manager.py` + `config/system.yaml`
 
 Singleton via `__new__`. Methods: `load(path)` parses YAML, `get(*keys, default)` traverses nested dict, `reload()` resets. Used by PerceptionProvider, RecorderEngine, DataManager, PipelineRunner, main.py.
+
+| Section | Key | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `screen` | `logical_width`, `logical_height`, `dpi_scale` | 1920×1080, auto | Screen resolution and DPI |
+| `paths` | `recordings_dir`, `workflows_dir`, `logs_dir` | data/... | Data directory paths |
+| `recorder` | `box_select_timeout_seconds` | 10 | Box-select mode timeout |
+| `replay` | `start_delay_seconds` | 0 | Delay before first step executes |
 
 ### Engine — `engine/recorder_engine.py`
 
@@ -139,7 +146,9 @@ Thin wrapper: `register(hotkey, callback)` calls `keyboard.add_hotkey`, `start_l
 
 ### Engine — `engine/pipeline_runner.py`
 
-[ACTIVE] Reads workflow JSON from given path. Creates a new `{run_ts}/` directory under `recordings/{dir_name}/`. For each step: calls `create_locator(method)`, `locator.locate(step)` for coords, captures before-screen via `capture_screen()`, clicks via `ActionExecutor`, captures after-screen. Saves before/after with red cross to `snapshots/`. If step has a `region`, re-captures the region screenshot and saves to `screenshots/`.
+[ACTIVE] Reads workflow JSON from given path. On start, respects `replay.start_delay_seconds` from `system.yaml` (default 0 — no delay) — a brief pause before executing the first step, giving the user time to switch to the target window.
+
+Creates a new `{run_ts}/` directory under `recordings/{dir_name}/`. For each step: calls `create_locator(method)`, `locator.locate(step)` for coords, captures before-screen via `capture_screen()`, clicks via `ActionExecutor`, captures after-screen. Saves before/after with red cross to `snapshots/`. If step has a `region`, re-captures the region screenshot and saves to `screenshots/`.
 
 This is the sole producer of all image files (screenshots + snapshots). Recording mode produces JSON only — no images written until replay.
 

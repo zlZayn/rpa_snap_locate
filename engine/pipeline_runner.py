@@ -17,6 +17,7 @@ class PipelineRunner:
     def __init__(self):
         self._perception = PerceptionProvider()
         self._config = ConfigManager()
+        self._start_delay = self._config.get("replay", "start_delay_seconds", default=0.0)
 
     def run(self, workflow_path: str) -> None:
         if not os.path.exists(workflow_path):
@@ -29,6 +30,10 @@ class PipelineRunner:
         if not steps:
             logger.warning("workflow is empty, nothing to run")
             return
+
+        if self._start_delay > 0:
+            logger.info("starting pipeline in %.1f seconds ...", self._start_delay)
+            _time.sleep(self._start_delay)
 
         run_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         fname = os.path.basename(workflow_path)

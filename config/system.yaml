@@ -10,3 +10,6 @@ paths:
 
 recorder:
   box_select_timeout_seconds: 10
+
+replay:
+  start_delay_seconds: 0
