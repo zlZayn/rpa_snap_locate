@@ -4,12 +4,26 @@ Pure-visual desktop automation recorder and replay tool. Fixed-coordinate + scre
 
 ---
 
+## Design Philosophy
+
+**Record once, replay many.** Recording produces only a portable JSON workflow — no images, no environment-specific artifacts. Screenshots are captured fresh each replay, keeping the JSON small, version-controllable, and resilient to minor UI drift.
+
+**Two locators for two problems.** Fixed coordinates are fast and deterministic — ideal for stable UI elements. Screenshot regions (box-select, recorded with F3) survive window repositioning and layout shifts that break fixed coordinates. The `BaseLocator` ABC + factory pattern means future locators (template matching, LLM) slot in without touching other modules.
+
+**DPI-aware coordinate space.** All coordinates are stored as normalized (0–1) values based on logical resolution. This ensures pixel-perfect replay across different DPI scaling settings.
+
+**Images are replay-only artifacts.** Recording never writes images. Each replay creates a self-contained timestamped directory with its own screenshots and before/after snapshots. Running the same workflow N times produces N independent evidence sets.
+
+---
+
 ## Entry Points
 
-Two modes via `main.py`, dispatched by argv:
+Two modes dispatched by `main.py`:
 
-- `uv run python main.py` — recording mode (interactive, hotkey-driven)
-- `uv run python main.py run data/workflows/<name>.json` — replay mode (headless, runs and exits)
+| Mode | Command | Behavior |
+| :--- | :--- | :--- |
+| Record | `uv run python main.py` | Interactive, hotkey-driven. Blocks on `keyboard.wait()`. F5 triggers replay via daemon thread. |
+| Replay | `uv run python main.py run <workflow.json>` | Headless. Loads workflow, runs PipelineRunner, exits. No hotkeys, no blocking. |
 
 ### Recording mode (`cmd_record()`)
 

@@ -1,38 +1,62 @@
 # RPA Snap Locate
 
-纯视觉驱动的桌面自动化录制和回放工具。固定坐标 + 截图区域定位，预留 LLM 插槽。
+[English](README.md) | [简体中文](README_zh.md)
 
-## 快速开始
+Pure-visual desktop automation recorder and replay tool. Fixed-coordinate + screenshot-region positioning, with pluggable LLM slot.
+
+## Quick Start
 
 ```bash
 uv sync
-uv run python main.py             # 录制模式（热键驱动）
-uv run python main.py run <workflow.json>  # 回放模式
+uv run python main.py                        # record mode (hotkey-driven)
+uv run python main.py run data/workflows/<file>.json  # replay mode
 ```
 
-## 热键（录制模式）
+## Hotkeys (Record Mode)
 
-| 热键 | 功能 |
+| Hotkey | Function |
 | :--- | :--- |
-| F2 | 在鼠标位置记录一个点击步骤 |
-| F3 | 两次按压框选区域 |
-| ESC | 取消当前框选 / 使用框中心 |
-| Ctrl+S | 保存工作流 |
-| F5 | 回放最新的工作流 |
+| F2 | Record a click step at mouse position |
+| F3 | Two-press box selection for region recording |
+| ESC | Cancel current box selection |
+| Ctrl+S | Save workflow |
+| F5 | Replay the latest workflow |
 
-## 目录结构
+> During box selection (after first F3), pressing F2 sets a precise click target inside the box; pressing ESC uses the box center as default.
+
+## Replay
+
+```bash
+uv run python main.py run <workflow.json>
+```
+
+The pipeline waits `replay.start_delay_seconds` (default 0 — configurable in `config/system.yaml`) before executing the first step, giving you time to switch to the target window.
+
+Images (screenshots + before/after snapshots) are generated only during replay — recording produces only JSON.
+
+## Directory Layout
 
 ```
 data/
-  recordings/{会话}-{N}steps/
-    {运行时间戳}/
-      screenshots/               # 区域截图（回放时重新截取）
-      snapshots/                 # 红叉证据（before + after）
-  workflows/{会话}-{N}steps.json  # 工作流 JSON
+  recordings/{session}-{N}steps/
+    {run_timestamp}/
+      screenshots/               # region screenshots (re-captured on replay)
+      snapshots/                 # red-cross evidence (before + after)
+  workflows/{session}-{N}steps.json  # workflow JSON
 ```
 
-录制只写 JSON，截图和快照全部在回放时生成。每次回放自包含一个 `{运行时间戳}` 目录。
+## Configuration
 
-## 管理权限
+Edit `config/system.yaml`:
 
-Windows 下需要管理员权限运行（keyboard 库限制）。
+| Section | Key | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `screen` | `logical_width`, `logical_height` | 1920, 1080 | Logical resolution |
+| `screen` | `dpi_scale` | auto | DPI scaling factor |
+| `replay` | `start_delay_seconds` | 0 | Delay before first step executes |
+
+## Requirements
+
+- Python >= 3.11
+- uv (package manager)
+- Administrator rights on Windows (required by `keyboard` library)
