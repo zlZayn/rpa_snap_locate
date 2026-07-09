@@ -135,6 +135,7 @@ Singleton via `__new__`. Methods: `load(path)` parses YAML, `get(*keys, default)
 Central state machine. States: IDLE, WAITING_SECOND, WAITING_TARGET.
 
 Transitions:
+
 - IDLE + F2: stays IDLE, builds fixed-click step via StepBuilder
 - IDLE + F3: records `_box_point1`, transitions to WAITING_SECOND
 - IDLE + ESC: no-op
@@ -151,6 +152,7 @@ On construction, records a timestamp from `DataManager.new_recording()`. On save
 ### Engine — `engine/step_builder.py`
 
 Owns auto-increment `_step_counter`. Two methods:
+
 - `build_fixed_click_step()`: sensor data → `{index, action, method:"fixed", norm_x, norm_y, ...}`
 - `build_screenshot_click_step(region, offset_x, offset_y)`: → `{index, action, method:"screenshot", region, offset_x, offset_y, ...}` (no `screenshot_path` — screenshot is captured at replay time)
 
@@ -173,6 +175,7 @@ Used by both F5 hotkey (recording mode, daemon thread) and `cmd_run` (replay mod
 ### Core — `core/perception_provider.py`
 
 All hardware access centralized. Six methods:
+
 - `capture_screen()`: mss → PIL.Image
 - `capture_region(l,t,w,h)`: mss → PIL.Image
 - `get_mouse_position()`: pyautogui → (phys_x, phys_y)
@@ -207,6 +210,7 @@ class BaseLocator(ABC):
 ### Data — `data/data_manager.py`
 
 Handles JSON persistence for workflows. Also ensures `workflows_dir` exists on init.
+
 - `new_recording()`: records a session timestamp string
 - `save_workflow(steps, session_name)`: writes `{workflows_dir}/{ts}-{N}steps.json`
 
@@ -253,6 +257,7 @@ No `screenshot_path` in json — region screenshots are captured fresh each repl
 ## Per-Run Directory
 
 Each run (recording or replay) lives in `recordings/{session}/{run_ts}/`:
+
 - `screenshots/step_{index:04d}.png` — region screenshot re-captured each replay
 - `snapshots/step_{index:04d}_before.png` — before-click full screen with red cross at click pos
 - `snapshots/step_{index:04d}_after.png` — after-click full screen with red cross at click pos

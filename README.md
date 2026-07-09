@@ -36,7 +36,7 @@ Images (screenshots + before/after snapshots) are generated only during replay â
 
 ## Directory Layout
 
-```
+```text
 data/
   recordings/{session}-{N}steps/
     {run_timestamp}/

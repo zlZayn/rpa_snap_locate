@@ -36,7 +36,7 @@ uv run python main.py run <workflow.json>
 
 ## 目录结构
 
-```
+```text
 data/
   recordings/{会话}-{N}steps/
     {运行时间戳}/
