@@ -7,11 +7,10 @@ class BaseLocator(ABC):
 
 
 def create_locator(method: str) -> BaseLocator:
-    from core.locators import FixedLocator, ScreenshotLocator, LLMLocator
+    from core.locators import FixedLocator, LLMLocator
 
     mapping = {
         "fixed": FixedLocator,
-        "screenshot": ScreenshotLocator,
         "llm": LLMLocator,
     }
     cls = mapping.get(method)

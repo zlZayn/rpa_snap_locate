@@ -2,72 +2,128 @@
 
 [English](README.md) | [简体中文](README_zh.md)
 
-纯视觉驱动的桌面自动化录制和回放工具。固定坐标 + 截图区域定位，预留 LLM 插槽。
+一个轻量的 Windows 鼠标操作录制和回放工具。录一次，以后可以重复执行。
+
+## 它能记录什么
+
+- 记住每次按下、松开以及两次操作之间的时间；
+- 保留快速双击，不会自动插入固定等待；
+- 支持鼠标左键、右键和中键；
+- 记录点击位置，并适应常见的屏幕缩放；
+- 可以用 F3 标记区域，回放时自动截图保存；
+- 每次回放保存开始前、结束后的画面，并记录操作是否明显迟到；
+- 也可以选择只保存点击位置和顺序，不记录操作间隔。
 
 ## 快速开始
 
+先安装依赖：
+
 ```bash
 uv sync
-uv run python main.py                        # 录制模式（热键驱动）
-uv run python main.py run data/workflows/<file>.json  # 回放模式
 ```
 
-## 热键（录制模式）
-
-| 热键 | 功能 |
-| :--- | :--- |
-| F2 | 在鼠标位置记录一个点击步骤 |
-| F3 | 两次按压框选区域 |
-| ESC | 取消当前框选 |
-| Ctrl+S | 保存当前工作流并开始新录制 |
-| F5 | 回放最新的工作流 |
-
-> 框选状态下（第一次 F3 之后），按 F2 可在框内指定精确点击位置；按 ESC 则使用框中心作为默认点击点。
-
-每次保存只包含程序启动后或上次保存后录制的步骤。保存成功后，步骤编号和未完成的框选状态都会重置，可立即开始新的工作流。没有已录制步骤时按 Ctrl+S 不会执行任何操作。
-
-## 回放
+启动录制：
 
 ```bash
-uv run python main.py run <workflow.json>
+uv run python main.py
 ```
 
-回放时，`replay.start_delay_seconds`（默认 0 秒，可在 `config/system.yaml` 中调整）控制执行第一个步骤前的等待时间，让你有充足时间切换到目标窗口。
+只需要记住这一条主流程：
 
-截图和快照仅在回放时生成——录制只输出 JSON。
+1. 按 F2 开始录制。
+2. 正常完成鼠标操作，双击就按平时的速度双击。
+3. 按 Ctrl+S 保存（正在录的话会先停再存）。
+4. 按 F5 回放刚保存的文件。
 
-Windows 下，回放进程与目标软件必须处于相同权限级别。Windows 会拦截普通进程向管理员窗口注入的模拟输入。建议两者都以普通权限运行；如果目标软件必须以管理员身份运行，回放进程也必须提升到相同权限。点击被拒绝时程序会明确报错，不会再记录成虚假的成功。
+如果先按 F2 停再按 Ctrl+S 保存也一样，两种用法的结果完全一样。只有想分几次录、最后一次性保存时，才在中间按 F2 暂停；暂停期间的时间不会被记入。
 
-## 串联脚本
+也可以指定文件回放：
 
-将软件启动和 RPA 回放串联成一个脚本，方便 AI 代理直接生成和执行。参见 [`examples/series.template.ps1`](examples/series.template.ps1)（PowerShell）、[`examples/series.template.sh`](examples/series.template.sh)（Bash）和 [`docs/COMMAND_SERIES.md`](docs/COMMAND_SERIES.md)。
+```bash
+uv run python main.py run data/workflows/<文件名>.json
+```
 
-Windows 下应优先直接启动软件的 GUI `.exe`。`.cmd` 或 `.bat` 启动器可能在软件整个生命周期内保留控制台宿主；必须使用此类启动器时，PowerShell 模板会隐藏该宿主窗口。
+## 录制按键
 
-## 目录结构
+| 按键 | 作用 |
+| :--- | :--- |
+| Ctrl+Delete | 清空尚未保存的操作记录 |
+| Ctrl+S | 保存（正在录制则先停止再保存） |
+| ESC | 取消进行中的框选 |
+| F1 | 显示本帮助 |
+| F2 | 开始录制；再次按下停止并保留，可继续追加 |
+| F3 | 框选截图范围：按两次 F3 标记矩形区域，回放时自动截图保存；不改变点击定位方式 |
+| F5 | 回放最近保存的文件 |
+
+### 使用框选截图
+
+先按 F2 开始录制，然后：
+
+1. 把鼠标放到区域的一个角，按 F3。
+2. 移到对角，再按一次 F3。
+
+区域已标记为截图目标。录制和点击的定位不受影响（始终使用绝对坐标）。可以标记多个区域，回放时各自的区域图会被截取保存到 data/recordings/ 目录。
+
+## 看不懂提示时怎么办
+
+- F3 提示不能使用：先按 F2 开始录制，再进行框选。
+- 保存提示鼠标没有松开：按 Ctrl+Delete 清空，再重新录制一次。
+- F5 提示有未保存内容：先按 Ctrl+S 保存，或者按 Ctrl+Delete 放弃。
+- 想查看最近保存了哪个文件：保存成功后终端会显示完整路径。
+- 忘记按键：按 F1，终端会重新显示主流程。
+
+## 回放结果
+
+录制文件保存在：
 
 ```text
-data/
-  recordings/[{名称}-]{时间戳}-{N}steps/
-    {运行时间戳}/
-      screenshots/               # 区域截图（回放时重新截取）
-      snapshots/                 # 红叉证据（before + after）
-  workflows/[{名称}-]{时间戳}-{N}steps.json  # 工作流 JSON；名称可选
+data/workflows/
 ```
 
-## 配置说明
+每次回放的开始画面、结束画面和时间记录保存在：
+
+```text
+data/recordings/<录制文件名>/<回放时间>/
+```
+
+如果某次操作比原计划晚很多，`replay_report.json` 会把这次回放标记为 `degraded`。这通常表示电脑当时较忙、窗口切换较慢，或操作间隔太短。
+
+## 常用设置
 
 编辑 `config/system.yaml`：
 
-| 配置段 | 键 | 默认值 | 说明 |
-| :--- | :--- | :--- | :--- |
-| `screen` | `logical_width`, `logical_height` | 1920, 1080 | 逻辑分辨率 |
-| `screen` | `dpi_scale` | auto | DPI 缩放比 |
-| `replay` | `start_delay_seconds` | 0 | 首个步骤执行前的等待秒数 |
+| 设置 | 默认值 | 用途 |
+| :--- | :--- | :--- |
+| `recorder.mode` | `timeline` | `timeline` 保留操作间隔；`legacy` 只保存点击位置和顺序 |
+| `recorder.event_queue_limit` | `10000` | 一次录制最多暂存多少个鼠标事件 |
+| `replay.start_delay_seconds` | `0` | 回放开始前等待几秒，方便切换窗口 |
+| `replay.late_warning_ms` | `10` | 操作晚于计划多少毫秒时给出提醒 |
 
-## 依赖要求
+通常只需要调整 `start_delay_seconds`。例如设为 `2`，运行回放后会先等两秒。
 
-- Python >= 3.11
-- uv（包管理器）
-- Windows 录制模式的全局热键可能需要管理员权限
-- 回放进程与目标软件必须使用相同的 Windows 权限级别
+## Windows 权限
+
+回放程序和目标软件必须使用相同权限：
+
+- 目标软件普通运行时，本工具也普通运行；
+- 目标软件以管理员身份运行时，本工具也要以管理员身份运行。
+
+权限不同会导致 Windows 拒绝鼠标操作，程序会直接报错，不会假装执行成功。
+
+## 串联启动软件和回放
+
+如果需要先打开软件、等待它准备好、再自动回放，可参考：
+
+- [PowerShell 模板](examples/series.template.ps1)
+- [Shell 模板](examples/series.template.sh)
+- [串联脚本说明](docs/COMMAND_SERIES.md)
+
+Windows 下尽量直接启动软件的 `.exe` 文件。
+
+## 要求
+
+- Windows
+- Python 3.11 或更高版本
+- [uv](https://docs.astral.sh/uv/)
+
+需要了解内部模块、录制状态、文件格式和回放时间控制时，请阅读[架构文档](docs/ARCHITECTURE.md)。

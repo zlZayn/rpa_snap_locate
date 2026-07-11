@@ -13,14 +13,14 @@ class HotkeyRegistry:
         hotkey_lower = hotkey.lower()
         self._handlers[hotkey_lower] = callback
         keyboard.add_hotkey(hotkey_lower, callback)
-        logger.info("registered hotkey: %s", hotkey)
+        logger.debug("registered hotkey: %s", hotkey)
 
     def start_listening(self) -> None:
-        logger.info("hotkey listener started")
+        logger.debug("hotkey listener started")
         try:
             keyboard.wait()
         except KeyboardInterrupt:
-            logger.info("hotkey listener stopped by user")
+            logger.info("录制程序已退出")
 
     def remove_all(self) -> None:
         keyboard.unhook_all()

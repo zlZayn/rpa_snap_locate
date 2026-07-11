@@ -1,7 +1,6 @@
 import ctypes
 from ctypes import wintypes
 import logging
-import time
 
 import pyautogui
 
@@ -42,7 +41,17 @@ class INPUT(ctypes.Structure):
 INPUT_MOUSE = 0
 MOUSEEVENTF_LEFTDOWN = 0x0002
 MOUSEEVENTF_LEFTUP = 0x0004
+MOUSEEVENTF_RIGHTDOWN = 0x0008
+MOUSEEVENTF_RIGHTUP = 0x0010
+MOUSEEVENTF_MIDDLEDOWN = 0x0020
+MOUSEEVENTF_MIDDLEUP = 0x0040
 GA_ROOT = 2
+
+_BUTTON_FLAGS = {
+    "left": (MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP),
+    "right": (MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP),
+    "middle": (MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP),
+}
 
 
 class ActionExecutor:
@@ -50,6 +59,7 @@ class ActionExecutor:
         self._user32 = ctypes.WinDLL("user32", use_last_error=True)
         self._kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         self._declare_win32_signatures()
+        self._last_target_hwnd = None
 
     def _declare_win32_signatures(self) -> None:
         self._user32.WindowFromPoint.argtypes = (wintypes.POINT,)
@@ -71,22 +81,30 @@ class ActionExecutor:
         self._kernel32.GetConsoleWindow.argtypes = ()
         self._kernel32.GetConsoleWindow.restype = wintypes.HWND
 
-    def click(self, x: int, y: int) -> None:
+    def prepare_target(self, x: int, y: int, force: bool = False) -> int:
         point = wintypes.POINT(x, y)
         child_hwnd = self._user32.WindowFromPoint(point)
         target_hwnd = (
             self._user32.GetAncestor(child_hwnd, GA_ROOT) if child_hwnd else None
         )
-        console_hwnd = self._kernel32.GetConsoleWindow()
+        if not target_hwnd:
+            return 0
 
-        if target_hwnd and target_hwnd != console_hwnd:
+        if not force and target_hwnd == self._last_target_hwnd:
+            return target_hwnd
+
+        console_hwnd = self._kernel32.GetConsoleWindow()
+        if target_hwnd != console_hwnd:
             if not self._user32.SetForegroundWindow(target_hwnd):
                 logger.warning(
-                    "could not foreground target window 0x%x; clicking window under cursor",
+                    "could not foreground target window 0x%x",
                     target_hwnd,
                 )
-            time.sleep(0.2)
 
+        self._last_target_hwnd = target_hwnd
+        return target_hwnd
+
+    def move_to(self, x: int, y: int) -> None:
         ctypes.set_last_error(0)
         if not self._user32.SetCursorPos(x, y):
             error = ctypes.get_last_error()
@@ -105,15 +123,24 @@ class ActionExecutor:
                 f"requested ({x}, {y})"
             )
 
-        self._send_mouse_button(MOUSEEVENTF_LEFTDOWN)
-        time.sleep(0.1)
-        self._send_mouse_button(MOUSEEVENTF_LEFTUP)
-        logger.info(
-            "clicked at (%d, %d), target hwnd=0x%x",
-            x,
-            y,
-            target_hwnd or 0,
-        )
+    def mouse_down(self, button: str = "left") -> None:
+        if button not in _BUTTON_FLAGS:
+            raise ValueError(f"unsupported mouse button: {button}")
+        down_flag, _ = _BUTTON_FLAGS[button]
+        self._send_mouse_button(down_flag)
+
+    def mouse_up(self, button: str = "left") -> None:
+        if button not in _BUTTON_FLAGS:
+            raise ValueError(f"unsupported mouse button: {button}")
+        _, up_flag = _BUTTON_FLAGS[button]
+        self._send_mouse_button(up_flag)
+
+    def click(self, x: int, y: int) -> None:
+        self.prepare_target(x, y, force=True)
+        self.move_to(x, y)
+        self.mouse_down("left")
+        self.mouse_up("left")
+        logger.info("clicked at (%d, %d)", x, y)
 
     def _send_mouse_button(self, flag: int) -> None:
         event = INPUT(

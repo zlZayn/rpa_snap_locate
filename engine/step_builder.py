@@ -29,22 +29,20 @@ class StepBuilder:
             "dpi_scale": dpi_scale,
         }
 
-    def build_screenshot_click_step(
-        self,
-        region: dict,
-        offset_x: int,
-        offset_y: int,
-    ) -> dict:
+    def build_absolute_click_step(self, phys_x: int, phys_y: int) -> dict:
         self._step_counter += 1
         window_info = self._perception.get_active_window()
         dpi_scale = self._perception.get_dpi_scale()
+        logical_w, logical_h = self._perception.get_logical_resolution()
+        norm_x, norm_y = phys_to_normalized(
+            phys_x, phys_y, logical_w, logical_h, dpi_scale
+        )
         return {
             "index": self._step_counter,
             "action": "click",
-            "method": "screenshot",
-            "region": region,
-            "offset_x": offset_x,
-            "offset_y": offset_y,
+            "method": "fixed",
+            "norm_x": round(norm_x, 6),
+            "norm_y": round(norm_y, 6),
             "window_title": window_info["title"],
             "dpi_scale": dpi_scale,
         }

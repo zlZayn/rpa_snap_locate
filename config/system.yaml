@@ -9,7 +9,12 @@ paths:
   logs_dir: logs/
 
 recorder:
+  mode: timeline
   box_select_timeout_seconds: 10
+  event_queue_limit: 10000
 
 replay:
   start_delay_seconds: 0
+  timing_mode: strict
+  late_warning_ms: 10
+  evidence_mode: burst
