@@ -147,7 +147,7 @@ Transitions:
 
 Public API: `on_f2()`, `on_f3()`, `on_cancel()`, `save()`, `clear()`, `use_box_center()`. Properties: `steps` (copy), `step_count`.
 
-On construction, records a timestamp from `DataManager.new_recording()`. On save, writes the step list as JSON to `workflows/{ts}-{N}steps.json`. No filesystem directories or images are created during recording.
+On construction, records a microsecond-precision timestamp from `DataManager.new_recording()`. On save, writes the step list as JSON to `workflows/{ts}-{N}steps.json`, then clears the steps, restarts step numbering, cancels any in-progress box selection, and creates a fresh recording name. An empty save is a no-op. No filesystem directories or images are created during recording.
 
 ### Engine — `engine/step_builder.py`
 

@@ -76,7 +76,7 @@ def cmd_record():
     logger.info("  F2      - record click at mouse position")
     logger.info("  F3      - start/end box selection (2 presses)")
     logger.info("  ESC     - cancel current box selection")
-    logger.info("  Ctrl+S   - save workflow to file")
+    logger.info("  Ctrl+S   - save and start new recording")
     logger.info("  F5      - replay saved workflow")
     logger.info("=" * 50)
 
