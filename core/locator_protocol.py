@@ -3,12 +3,12 @@ from abc import ABC, abstractmethod
 
 class BaseLocator(ABC):
     @abstractmethod
-    def locate(self, step: dict) -> tuple[int, int]:
-        ...
+    def locate(self, step: dict) -> tuple[int, int]: ...
 
 
 def create_locator(method: str) -> BaseLocator:
     from core.locators import FixedLocator, ScreenshotLocator, LLMLocator
+
     mapping = {
         "fixed": FixedLocator,
         "screenshot": ScreenshotLocator,

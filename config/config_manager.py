@@ -14,9 +14,7 @@ class ConfigManager:
 
     def load(self, config_path: str = None) -> dict:
         if config_path is None:
-            config_path = os.path.join(
-                os.path.dirname(__file__), "system.yaml"
-            )
+            config_path = os.path.join(os.path.dirname(__file__), "system.yaml")
         with open(config_path, "r", encoding="utf-8") as f:
             self._data = yaml.safe_load(f)
         return self._data

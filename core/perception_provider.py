@@ -16,7 +16,9 @@ class PerceptionProvider:
         sct_img = self._sct.grab(monitor)
         return Image.frombytes("RGB", sct_img.size, sct_img.rgb)
 
-    def capture_region(self, left: int, top: int, width: int, height: int) -> Image.Image:
+    def capture_region(
+        self, left: int, top: int, width: int, height: int
+    ) -> Image.Image:
         region = {"left": left, "top": top, "width": width, "height": height}
         sct_img = self._sct.grab(region)
         return Image.frombytes("RGB", sct_img.size, sct_img.rgb)
@@ -30,8 +32,10 @@ class PerceptionProvider:
             return {
                 "title": "",
                 "hwnd": 0,
-                "left": 0, "top": 0,
-                "width": 0, "height": 0,
+                "left": 0,
+                "top": 0,
+                "width": 0,
+                "height": 0,
             }
         return {
             "title": window.title,
