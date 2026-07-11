@@ -31,7 +31,7 @@ class RecorderEngine:
         self._timeout_seconds = self._config.get(
             "recorder", "box_select_timeout_seconds", default=10
         )
-        self._recording_name = self._data_manager.new_recording()
+        self._ts = self._data_manager.new_ts()
 
     @property
     def steps(self) -> list[dict]:
@@ -75,9 +75,10 @@ class RecorderEngine:
         if not self._steps:
             return "no steps to save"
 
+        name = self._prompt_name()
         steps_to_save = list(self._steps)
         saved_count = len(steps_to_save)
-        path = self._data_manager.save_workflow(steps_to_save, self._recording_name)
+        path = self._data_manager.save_workflow(steps_to_save, self._ts, name)
         self._reset_recording()
         logger.info(
             "saved %d steps to %s, recording reset for new workflow",
@@ -89,19 +90,37 @@ class RecorderEngine:
         )
 
     def clear(self) -> str:
-        self._reset_recording(refresh_name=False)
+        self._reset_recording(refresh_ts=False)
         logger.info("workflow cleared")
         return "workflow cleared"
 
-    def _reset_recording(self, refresh_name: bool = True) -> None:
+    def _prompt_name(self) -> str:
+        try:
+            import tkinter as tk
+            from tkinter import simpledialog
+
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes("-topmost", True)
+            result = simpledialog.askstring(
+                "Save Workflow",
+                "Workflow name (optional):",
+                parent=root,
+            )
+            root.destroy()
+            return (result or "").strip()
+        except Exception:
+            return ""
+
+    def _reset_recording(self, refresh_ts: bool = True) -> None:
         self._steps.clear()
         self._step_builder.reset_counter()
         self.state = RecorderState.IDLE
         self._box_point1 = None
         self._box_point2 = None
         self._box_region = None
-        if refresh_name:
-            self._recording_name = self._data_manager.new_recording()
+        if refresh_ts:
+            self._ts = self._data_manager.new_ts()
 
     def _handle_f3_first(self) -> str:
         self._box_point1 = self._perception.get_mouse_position()

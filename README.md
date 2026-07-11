@@ -36,19 +36,23 @@ The pipeline waits `replay.start_delay_seconds` (default 0 — configurable in `
 
 Images (screenshots + before/after snapshots) are generated only during replay — recording produces only JSON.
 
+On Windows, the replay process and target application must run at the same privilege level. Windows blocks simulated input from a normal process into an administrator window. Prefer running both normally; if the target must be elevated, elevate the replay process too. A rejected click is reported as an error instead of being logged as successful.
+
 ## Series
 
 Chain app launches and RPA replays into a single script — easy for AI agents to generate and execute. See [`examples/series.template.ps1`](examples/series.template.ps1) (PowerShell), [`examples/series.template.sh`](examples/series.template.sh) (Bash), or [`docs/COMMAND_SERIES.md`](docs/COMMAND_SERIES.md).
+
+On Windows, launch the application's GUI `.exe` directly when possible. A `.cmd` or `.bat` launcher may keep its console host open for the application's entire lifetime; the PowerShell template hides that host when such a launcher is required.
 
 ## Directory Layout
 
 ```text
 data/
-  recordings/{session}-{N}steps/
+  recordings/[{name}-]{timestamp}-{N}steps/
     {run_timestamp}/
       screenshots/               # region screenshots (re-captured on replay)
       snapshots/                 # red-cross evidence (before + after)
-  workflows/{session}-{N}steps.json  # workflow JSON
+  workflows/[{name}-]{timestamp}-{N}steps.json  # workflow JSON; name is optional
 ```
 
 ## Configuration
@@ -65,4 +69,5 @@ Edit `config/system.yaml`:
 
 - Python >= 3.11
 - uv (package manager)
-- Administrator rights on Windows (required by `keyboard` library)
+- Windows record mode may require administrator rights for global hotkeys
+- Replay and the target application must use the same Windows privilege level

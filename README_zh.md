@@ -36,19 +36,23 @@ uv run python main.py run <workflow.json>
 
 截图和快照仅在回放时生成——录制只输出 JSON。
 
+Windows 下，回放进程与目标软件必须处于相同权限级别。Windows 会拦截普通进程向管理员窗口注入的模拟输入。建议两者都以普通权限运行；如果目标软件必须以管理员身份运行，回放进程也必须提升到相同权限。点击被拒绝时程序会明确报错，不会再记录成虚假的成功。
+
 ## 串联脚本
 
 将软件启动和 RPA 回放串联成一个脚本，方便 AI 代理直接生成和执行。参见 [`examples/series.template.ps1`](examples/series.template.ps1)（PowerShell）、[`examples/series.template.sh`](examples/series.template.sh)（Bash）和 [`docs/COMMAND_SERIES.md`](docs/COMMAND_SERIES.md)。
+
+Windows 下应优先直接启动软件的 GUI `.exe`。`.cmd` 或 `.bat` 启动器可能在软件整个生命周期内保留控制台宿主；必须使用此类启动器时，PowerShell 模板会隐藏该宿主窗口。
 
 ## 目录结构
 
 ```text
 data/
-  recordings/{会话}-{N}steps/
+  recordings/[{名称}-]{时间戳}-{N}steps/
     {运行时间戳}/
       screenshots/               # 区域截图（回放时重新截取）
       snapshots/                 # 红叉证据（before + after）
-  workflows/{会话}-{N}steps.json  # 工作流 JSON
+  workflows/[{名称}-]{时间戳}-{N}steps.json  # 工作流 JSON；名称可选
 ```
 
 ## 配置说明
@@ -65,4 +69,5 @@ data/
 
 - Python >= 3.11
 - uv（包管理器）
-- Windows 下需要管理员权限（keyboard 库限制）
+- Windows 录制模式的全局热键可能需要管理员权限
+- 回放进程与目标软件必须使用相同的 Windows 权限级别

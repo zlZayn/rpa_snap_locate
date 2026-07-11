@@ -62,7 +62,13 @@ function Start-SeriesApp {
     if ($ArgumentList.Count -gt 0) {
         $options.ArgumentList = $ArgumentList
     }
-    if ($Maximized) {
+    $extension = [System.IO.Path]::GetExtension($FilePath)
+    $isCommandScript = $extension -in @(".cmd", ".bat")
+    if ($isCommandScript) {
+        # Command launchers are hosted by cmd.exe and may wait for the GUI
+        # application's entire lifetime. Keep that host invisible.
+        $options.WindowStyle = "Hidden"
+    } elseif ($Maximized) {
         $options.WindowStyle = "Maximized"
     }
 

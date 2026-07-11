@@ -33,6 +33,12 @@ Wires ConfigManager + RecorderEngine + HotkeyRegistry. Registers F2/F3/ESC/Ctrl+
 
 Loads the given JSON file path and runs PipelineRunner directly. No hotkeys, no blocking. Exits after execution.
 
+### Series orchestration (`examples/series/`)
+
+Series scripts live outside the Python dependency graph. They start long-lived GUI applications in the background, wait for UI readiness, then invoke replay mode as a blocking foreground step. The target application and replay process must run at the same Windows integrity level; Windows UIPI rejects synthetic mouse input sent from a lower-integrity process to an elevated window.
+
+Prefer a GUI executable (`.exe`) over its command-line launcher (`.cmd` / `.bat`). A command launcher is hosted by `cmd.exe` and may wait for the GUI application's full lifetime, leaving a console window open. PowerShell Series scripts hide that command host when a command launcher is unavoidable. Application-specific Series scripts may self-elevate when their recorded target is explicitly an administrator window; the generic template does not elevate automatically.
+
 ---
 
 ## Layers & Dependency Direction
@@ -55,6 +61,9 @@ utils                → stdlib only
 ```text
 rpa_snap_locate/
 ├── main.py                     Entry          Two-mode dispatcher: record / run
+├── examples/
+│   ├── series.template.ps1      Orchestration  Generic PowerShell Series template
+│   └── series/                  Orchestration  Concrete app + replay sequences
 ├── config/
 │   ├── system.yaml                             Screen, paths (YAML)
 │   └── config_manager.py        Config         Singleton loader, dotted-key access
@@ -70,12 +79,12 @@ rpa_snap_locate/
 │   │   ├── fixed_locator.py       Domain        [ACTIVE] norm_x/norm_y to physical coords
 │   │   ├── template_locator.py    Domain        [ACTIVE] ScreenshotLocator: region + offset to coords
 │   │   └── llm_locator.py         Domain        [STUB] Future multimodal LLM locator
-│   ├── action_executor.py         Domain        [ACTIVE] pyautogui click/write, failsafe disabled
+│   ├── action_executor.py         Domain        [ACTIVE] Win32 click injection + pyautogui text input
 │   └── change_validator.py        Domain        [STUB] dHash change detection
 ├── data/
 │   ├── data_manager.py            Persistence   Workflow JSON persistence (workflows dir)
 │   ├── recordings/                Data          Per-session dirs with screenshots/ and snapshots/
-│   └── workflows/                 Data          JSON workflow files, named as {ts}-{N}steps.json
+│   └── workflows/                 Data          JSON workflows, optionally prefixed with a user name
 ├── utils/
 │   ├── dpi_calculator.py          Tool          DPI detection + coordinate conversion
 │   ├── logger_setup.py            Tool          RotatingFileHandler + console handler
@@ -83,7 +92,7 @@ rpa_snap_locate/
 │   └── image_entropy_calculator.py  Tool        [STUB] Shannon entropy
 ├── logs/
 │   └── recorder.log               Output        Runtime log
-├── tests/                          Tests        Ready for future use
+├── tests/                          Tests        Recorder state + Win32 injection result handling
 └── pyproject.toml                  Build        uv project, 6 dependencies
 ```
 
@@ -96,8 +105,8 @@ Naming convention: `domain_role.py` — suffixes `_manager`, `_provider`, `_prot
 ```text
 data/
   recordings/
-    20260709_221848-4steps/
-      20260709_221848/                    # run timestamp — recording or replay
+    open-folder-20260709_221848_123456-4steps/
+      20260709_221848/                    # replay run timestamp
         screenshots/                       # F3-cropped region screenshots
           step_0001.png
         snapshots/                         # red-cross evidence
@@ -110,7 +119,7 @@ data/
           step_0001_before.png
           step_0001_after.png
   workflows/
-    20260709_221848-4steps.json           # json lives here, separate from recordings
+    open-folder-20260709_221848_123456-4steps.json  # json lives here
 ```
 
 Recording produces only a JSON file in `data/workflows/` — no images. Images are generated exclusively during replay: each replay creates a self-contained `{run_ts}/` directory under `recordings/{dir_name}/` with `screenshots/` and `snapshots/`.
@@ -147,7 +156,7 @@ Transitions:
 
 Public API: `on_f2()`, `on_f3()`, `on_cancel()`, `save()`, `clear()`, `use_box_center()`. Properties: `steps` (copy), `step_count`.
 
-On construction, records a microsecond-precision timestamp from `DataManager.new_recording()`. On save, writes the step list as JSON to `workflows/{ts}-{N}steps.json`, then clears the steps, restarts step numbering, cancels any in-progress box selection, and creates a fresh recording name. An empty save is a no-op. No filesystem directories or images are created during recording.
+On construction, records a microsecond-precision timestamp from `DataManager.new_ts()`. On save, writes the step list as JSON to `workflows/{ts}-{N}steps.json` (or `{name}-{ts}-{N}steps.json` if a name was entered), then clears the steps, restarts step numbering, cancels any in-progress box selection, and creates a fresh timestamp. An empty save is a no-op. No filesystem directories or images are created during recording.
 
 ### Engine — `engine/step_builder.py`
 
@@ -168,7 +177,7 @@ Creates a new `{run_ts}/` directory under `recordings/{dir_name}/`. For each ste
 
 This is the sole producer of all image files (screenshots + snapshots). Recording mode produces JSON only — no images written until replay.
 
-Resolves recording dir from json filename (`{dir_name}.json` → `recordings/{dir_name}/{run_ts}/`). Falls back to `dirname(workflow_path)/{run_ts}/` if filename doesn't match convention.
+Resolves the recording directory from any `.json` filename (`{stem}.json` → `recordings/{stem}/{run_ts}/`). For a non-JSON workflow path, falls back to `dirname(workflow_path)/{run_ts}/`.
 
 Used by both F5 hotkey (recording mode, daemon thread) and `cmd_run` (replay mode, blocking).
 
@@ -201,7 +210,19 @@ class BaseLocator(ABC):
 
 ### Core — `core/action_executor.py`
 
-[ACTIVE] Wraps pyautogui, disables failsafe corner detection. `click(x, y)` calls `pyautogui.click`. `type_text(text)` calls `pyautogui.write` with 50ms interval.
+[ACTIVE] Owns physical mouse clicks. The click path is:
+
+```text
+POINT(x, y) → WindowFromPoint → GetAncestor(GA_ROOT) → SetForegroundWindow
+            → SetCursorPos → GetCursorPos verification
+            → SendInput(left-down) → 100 ms → SendInput(left-up)
+```
+
+All Win32 ctypes signatures are declared explicitly. In particular, `WindowFromPoint` receives a `POINT` structure by value; treating it as two integer arguments corrupts target-window resolution on 64-bit Windows. Foreground activation is best-effort because Windows may deny `SetForegroundWindow`, while the window physically under the cursor can still receive the click.
+
+`SetCursorPos`, `GetCursorPos`, and both `SendInput` calls are checked. A rejected input event raises instead of logging a false success. Windows UIPI does not allow code to bypass the integrity boundary: replay and target must use the same privilege level, preferably both non-administrator. Creating a thread message queue with `PeekMessageW` is unrelated to this restriction and is not part of the executor.
+
+`type_text(text)` remains on `pyautogui.write` with a 50 ms interval. `pyautogui.FAILSAFE` is disabled for deterministic replay.
 
 ### Core — `core/change_validator.py`
 
@@ -211,8 +232,8 @@ class BaseLocator(ABC):
 
 Handles JSON persistence for workflows. Also ensures `workflows_dir` exists on init.
 
-- `new_recording()`: records a session timestamp string
-- `save_workflow(steps, session_name)`: writes `{workflows_dir}/{ts}-{N}steps.json`
+- `new_ts()`: generates a microsecond-precision unique timestamp string
+- `save_workflow(steps, ts, name="")`: writes `{workflows_dir}/{name}-{ts}-{N}steps.json` (or `{ts}-{N}steps.json` if name is empty)
 
 All image I/O is handled by PipelineRunner during replay — DataManager has zero involvement in screenshot or snapshot storage.
 
@@ -220,7 +241,7 @@ All image I/O is handled by PipelineRunner during replay — DataManager has zer
 
 ## Data Formats
 
-### `data/workflows/{ts}-{N}steps.json`
+### `data/workflows/[{name}-]{ts}-{N}steps.json`
 
 ```json
 {
@@ -256,7 +277,7 @@ No `screenshot_path` in json — region screenshots are captured fresh each repl
 
 ## Per-Run Directory
 
-Each run (recording or replay) lives in `recordings/{session}/{run_ts}/`:
+Each replay lives in `recordings/{workflow_stem}/{run_ts}/`:
 
 - `screenshots/step_{index:04d}.png` — region screenshot re-captured each replay
 - `snapshots/step_{index:04d}_before.png` — before-click full screen with red cross at click pos
@@ -281,7 +302,7 @@ Each run (recording or replay) lives in `recordings/{session}/{run_ts}/`:
 | :--- | :--- |
 | Python | >= 3.11 |
 | Package manager | uv |
-| Admin rights | Required (Windows) — keyboard library needs SE_CREATE_GLOBAL_NAME |
+| Windows privileges | Record mode may require elevation for global hotkeys. Replay and target must have matching integrity levels; elevation is not otherwise required. |
 | Run | `uv run python main.py` (project root) |
 | Hotkeys | F2 (click), F3 (box), ESC (cancel), Ctrl+S (save), F5 (replay). Hardcoded in `main.py` |
 | Dependencies | mss, pygetwindow, pyautogui, keyboard, pyyaml, pillow |

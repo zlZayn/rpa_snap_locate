@@ -12,13 +12,16 @@ class DataManager:
         self._workflows_dir = self._config.get("paths", "workflows_dir")
         os.makedirs(self._workflows_dir, exist_ok=True)
 
-    def new_recording(self) -> str:
+    def new_ts(self) -> str:
         # Microseconds prevent rapid consecutive saves with the same step count
         # from resolving to the same path and overwriting the earlier workflow.
         return datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
-    def save_workflow(self, steps: list, session_name: str) -> str:
-        dir_name = f"{session_name}-{len(steps)}steps"
+    def save_workflow(self, steps: list, ts: str, name: str = "") -> str:
+        if name:
+            dir_name = f"{name}-{ts}-{len(steps)}steps"
+        else:
+            dir_name = f"{ts}-{len(steps)}steps"
         path = os.path.join(self._workflows_dir, f"{dir_name}.json")
         workflow = {
             "version": "4.0",

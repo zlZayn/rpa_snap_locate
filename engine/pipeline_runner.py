@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import re
 from datetime import datetime
 import time as _time
 from PIL import ImageDraw
@@ -37,10 +36,10 @@ class PipelineRunner:
 
         run_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         fname = os.path.basename(workflow_path)
-        m = re.match(r"^(\d{8}_\d{6}(?:_\d{6})?-\d+steps)\.json$", fname)
-        if m:
-            recordings_dir = self._config.get("paths", "recordings_dir")
-            run_dir = os.path.join(recordings_dir, m.group(1), run_ts)
+        recordings_dir = self._config.get("paths", "recordings_dir")
+        stem, ext = os.path.splitext(fname)
+        if ext == ".json":
+            run_dir = os.path.join(recordings_dir, stem, run_ts)
         else:
             run_dir = os.path.join(os.path.dirname(workflow_path), run_ts)
 
