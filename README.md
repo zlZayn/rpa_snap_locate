@@ -36,6 +36,10 @@ The pipeline waits `replay.start_delay_seconds` (default 0 — configurable in `
 
 Images (screenshots + before/after snapshots) are generated only during replay — recording produces only JSON.
 
+## Series
+
+Chain app launches and RPA replays into a single script — easy for AI agents to generate and execute. See [`examples/series.template.ps1`](examples/series.template.ps1) (PowerShell), [`examples/series.template.sh`](examples/series.template.sh) (Bash), or [`docs/COMMAND_SERIES.md`](docs/COMMAND_SERIES.md).
+
 ## Directory Layout
 
 ```text

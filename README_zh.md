@@ -36,6 +36,10 @@ uv run python main.py run <workflow.json>
 
 截图和快照仅在回放时生成——录制只输出 JSON。
 
+## 串联脚本
+
+将软件启动和 RPA 回放串联成一个脚本，方便 AI 代理直接生成和执行。参见 [`examples/series.template.ps1`](examples/series.template.ps1)（PowerShell）、[`examples/series.template.sh`](examples/series.template.sh)（Bash）和 [`docs/COMMAND_SERIES.md`](docs/COMMAND_SERIES.md)。
+
 ## 目录结构
 
 ```text
