@@ -19,10 +19,12 @@ uv run python main.py run data/workflows/<file>.json  # replay mode
 | F2 | Record a click step at mouse position |
 | F3 | Two-press box selection for region recording |
 | ESC | Cancel current box selection |
-| Ctrl+S | Save workflow |
+| Ctrl+S | Save the current workflow and start a new recording |
 | F5 | Replay the latest workflow |
 
 > During box selection (after first F3), pressing F2 sets a precise click target inside the box; pressing ESC uses the box center as default.
+
+Each save contains only the steps recorded since launch or the previous save. After a successful save, step numbering and any in-progress box selection are reset for a new workflow. Pressing Ctrl+S with no recorded steps does nothing.
 
 ## Replay
 

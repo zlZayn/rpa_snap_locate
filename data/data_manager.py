@@ -13,7 +13,9 @@ class DataManager:
         os.makedirs(self._workflows_dir, exist_ok=True)
 
     def new_recording(self) -> str:
-        return datetime.now().strftime("%Y%m%d_%H%M%S")
+        # Microseconds prevent rapid consecutive saves with the same step count
+        # from resolving to the same path and overwriting the earlier workflow.
+        return datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
     def save_workflow(self, steps: list, session_name: str) -> str:
         dir_name = f"{session_name}-{len(steps)}steps"

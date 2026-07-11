@@ -74,19 +74,34 @@ class RecorderEngine:
     def save(self) -> str:
         if not self._steps:
             return "no steps to save"
-        path = self._data_manager.save_workflow(self._steps, self._recording_name)
-        logger.info("saved workflow with %d steps to %s", len(self._steps), path)
-        return f"saved {len(self._steps)} steps to {path}"
+
+        steps_to_save = list(self._steps)
+        saved_count = len(steps_to_save)
+        path = self._data_manager.save_workflow(steps_to_save, self._recording_name)
+        self._reset_recording()
+        logger.info(
+            "saved %d steps to %s, recording reset for new workflow",
+            saved_count, path,
+        )
+        return (
+            f"saved {saved_count} steps to {path}. "
+            f"Recording reset, ready for new workflow."
+        )
 
     def clear(self) -> str:
+        self._reset_recording(refresh_name=False)
+        logger.info("workflow cleared")
+        return "workflow cleared"
+
+    def _reset_recording(self, refresh_name: bool = True) -> None:
         self._steps.clear()
         self._step_builder.reset_counter()
         self.state = RecorderState.IDLE
         self._box_point1 = None
         self._box_point2 = None
         self._box_region = None
-        logger.info("workflow cleared")
-        return "workflow cleared"
+        if refresh_name:
+            self._recording_name = self._data_manager.new_recording()
 
     def _handle_f3_first(self) -> str:
         self._box_point1 = self._perception.get_mouse_position()
