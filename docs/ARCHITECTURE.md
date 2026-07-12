@@ -440,11 +440,8 @@ data/
 | `paths.logs_dir` | `logs/` | 日志输出 |
 | `recorder.mode` | timeline | 选择时间线录制或逐步点击录制 |
 | `recorder.event_queue_limit` | 10000 | 原始按钮事件队列上限 |
-| `recorder.box_select_timeout_seconds` | 10 | 已读取，但当前没有定时器执行超时取消 |
 | `replay.start_delay_seconds` | 0 | 整条回放开始前等待 |
 | `replay.late_warning_ms` | 10 | 时间线回放判断 degraded 的迟到阈值 |
-| `replay.timing_mode` | strict | 配置已声明，当前时间线回放始终使用严格调度 |
-| `replay.evidence_mode` | burst | 配置已声明，当前时间线回放始终使用整段前后快照 |
 
 文档明确区分“已声明”和“已驱动分支”的配置，避免维护者误以为修改保留字段会改变运行行为。
 
