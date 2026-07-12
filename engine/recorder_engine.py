@@ -132,6 +132,8 @@ class RecorderEngine:
             return "first corner recorded, move mouse and press F3 again"
         elif self.state == RecorderState.RECORDING_WAITING_SECOND:
             self._box_point2 = self._perception.get_mouse_position()
+            assert self._box_point1 is not None
+            assert self._box_point2 is not None
             x1, y1 = self._box_point1
             x2, y2 = self._box_point2
             left, top = min(x1, x2), min(y1, y2)
@@ -336,6 +338,8 @@ class RecorderEngine:
 
     def _handle_f3_second(self) -> str:
         self._box_point2 = self._perception.get_mouse_position()
+        assert self._box_point1 is not None
+        assert self._box_point2 is not None
         x1, y1 = self._box_point1
         x2, y2 = self._box_point2
         left, top = min(x1, x2), min(y1, y2)

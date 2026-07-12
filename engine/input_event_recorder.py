@@ -112,6 +112,7 @@ class InputEventRecorder:
         with self._lock:
             if not self._recording:
                 return
+            assert self._origin is not None
             offset_ns = now_ns - self._origin
             if offset_ns < 0:
                 offset_ns = 0
@@ -145,6 +146,7 @@ class InputEventRecorder:
             with self._lock:
                 if not self._recording:
                     return
+                assert self._origin is not None
                 button = _BUTTON_MAP.get(event.button, event.button)
                 if button not in _SUPPORTED_BUTTONS:
                     self._capture_error = f"unsupported mouse button recorded: {button}"

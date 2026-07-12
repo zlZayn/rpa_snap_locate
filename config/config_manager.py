@@ -12,7 +12,7 @@ class ConfigManager:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def load(self, config_path: str = None) -> dict:
+    def load(self, config_path: str | None = None) -> dict:
         if config_path is None:
             config_path = os.path.join(os.path.dirname(__file__), "system.yaml")
         with open(config_path, "r", encoding="utf-8") as f:
