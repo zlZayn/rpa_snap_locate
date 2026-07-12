@@ -2,6 +2,7 @@ import logging
 import queue
 import threading
 import time
+from typing import Callable
 
 import mouse
 
@@ -46,20 +47,22 @@ class InputEventRecorder:
         return self._recording
 
     def start_recording(self) -> None:
+        # Capture the segment origin as soon as the F2 callback enters the
+        # recorder. Cursor lookup and hook setup are part of recording startup,
+        # so the user's wait before the first business event is preserved.
+        started_ns = time.perf_counter_ns()
         initial_x, initial_y = self._perception.get_mouse_position()
         with self._lock:
             if self._recording:
                 return
-            # The first business input event defines offset zero. Starting the
-            # hook or moving the mouse before the first click is preparation.
-            self._origin = None
+            self._origin = started_ns
             self._event_counter = 0
             self._event_queue = queue.Queue(maxsize=self._queue_limit)
             self._last_x = initial_x
             self._last_y = initial_y
             self._capture_error = None
             self._recording = True
-            logger.debug("recording started; waiting for first input event")
+            logger.debug("recording started; segment_origin=%d", self._origin)
 
         self._hook = mouse.hook(self._on_mouse_event)
 
@@ -109,8 +112,6 @@ class InputEventRecorder:
         with self._lock:
             if not self._recording:
                 return
-            if self._origin is None:
-                self._origin = now_ns
             offset_ns = now_ns - self._origin
             if offset_ns < 0:
                 offset_ns = 0
@@ -148,8 +149,6 @@ class InputEventRecorder:
                 if button not in _SUPPORTED_BUTTONS:
                     self._capture_error = f"unsupported mouse button recorded: {button}"
                     return
-                if self._origin is None:
-                    self._origin = now_ns
                 offset_ns = now_ns - self._origin
                 if offset_ns < 0:
                     offset_ns = 0

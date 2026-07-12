@@ -1,215 +1,215 @@
-# Command Series：用脚本串联任意命令
+# Command Series 组装规范
 
-## 核心思路
+本文档主要供 Agent 设计和生成 Command Series，也可供人工编写时参考。
 
-PowerShell 和 Bash 脚本本身就是轻量的命令编排器。任何能从终端运行的程序、脚本或 CLI 都可以成为一个步骤，本项目的 RPA 回放只是其中一种：
-
-```text
-准备文件 → 启动软件 → 回放 RPA → 执行 Python → 运行测试 → 发送通知
-```
-
-可以串联的内容没有固定清单，例如：
-
-- 启动、关闭或配置桌面软件；
-- 执行 Python、PowerShell、Bash、Node.js 等脚本；
-- 调用 Git、uv、ffmpeg、curl 等 CLI；
-- 复制文件、转换数据、构建项目或运行测试；
-- 回放一个或多个已录制的 RPA 工作流；
-- 在流程结束后归档结果或发送通知。
-
-只要命令有明确的参数、退出状态和完成边界，就可以放进同一个 Series。以下 RPA 命令就是一个普通的前台步骤：
-
-```powershell
-uv run python main.py run data/workflows/<workflow>.json
-```
-
-它会等待回放完成后退出，然后脚本继续执行下一步。其他前台命令遵循同样的串行规则；需要长期运行的 GUI 或服务则在后台启动，再显式等待其就绪。
-
-可直接复制以下模板：
-
-- [`examples/series.template.ps1`](../examples/series.template.ps1)：Windows / PowerShell，推荐本项目使用；
-- [`examples/series.template.sh`](../examples/series.template.sh)：Bash、Git Bash 或类 Unix 环境。
-
-生成的具体流程统一保存到 `examples/series/`：
+Command Series 是一个 PowerShell 脚本：它按顺序调用独立原子，组合软件启动、等待、鼠标回放、键盘操作和普通命令。Series 只负责编排，不复制原子的内部实现。
 
 ```text
-examples/
-├── series.template.ps1          # PowerShell 规范源
-├── series.template.sh           # Bash 规范源
-└── series/
-    ├── <series-name>.ps1        # 生成的 PowerShell 流程
-    └── <series-name>.sh         # 生成的 Bash 流程
+启动软件 → 等待就绪 → 鼠标回放 → 键盘操作 → 后续命令
 ```
 
-`<series-name>` 使用小写短横线命名，例如 `open-editor-and-export.ps1`。模板文件只维护公共函数和结构，具体软件路径与工作流组合放在 `examples/series/`，避免修改模板本身。
+## 1. 能力边界
 
-## PowerShell 串联规则
+- 本项目只录制鼠标工作流；
+- `run-rpa.ps1` 只回放已经存在的鼠标工作流，不现场录制；
+- `keyboard.ps1` 直接输入文字或发送快捷键，不录制键盘；
+- 不支持拖拽；
+- 视觉模型当前不实现，也没有原子模板。
 
-| 写法 | 含义 | 适用场景 |
+## 2. Agent 工作流程
+
+Agent 必须按以下顺序工作：
+
+1. 理解用户想做成的实际效果；
+2. 调查目标软件是否自带命令行参数或专用 CLI；
+3. 用人话向用户解释每一步要干什么；
+4. 确认所有不能自己猜的信息；
+5. 只读本次需要的原子；
+6. 在 `examples/series/` 创建具体 Series；
+7. 检查路径、占位符和 PowerShell 语法；
+8. 报告用了哪些原子、检查结果和还缺什么。
+
+不能先生成脚本让用户猜脚本会干什么。
+
+## 3. 生成前必须确认
+
+根据任务需要确认以下信息，别问无关的：
+
+| 信息 | 需要确认的内容 |
+| :--- | :--- |
+| 目标软件 | 软件名称和实际可执行文件路径 |
+| 软件能力 | 是否支持通过启动参数打开页面、文件、项目或设置窗口状态 |
+| 鼠标回放 | 使用哪些已有工作流，JSON 路径是否真实存在 |
+| 键盘文字 | 输入什么内容，发送到哪个窗口 |
+| 快捷键 | 发送什么组合键，发送到哪个窗口 |
+| 等待 | 哪个步骤需要等待，是否有明确就绪条件 |
+| 普通命令 | 命令、参数及成功标准 |
+| 执行顺序 | 每一步的先后关系 |
+
+用户不理解术语时，先用实际操作结果解释，再提问。例如不要只问“使用 `-CurrentWindow` 还是 `-WindowTitle`”，应先说明：
+
+- 指定窗口标题：脚本先查找并激活该窗口，但标题变化时可能找不到；
+- 使用当前窗口：不查找标题，但必须确定上一步已经把正确窗口置于前台。
+
+## 4. 原子目录
+
+原子在 `examples/atoms/`。只读本次会用到的文件。
+
+| 原子 | 用途 | 关键参数 |
 | :--- | :--- | :--- |
-| `& command @args` | 调用一个命令或脚本 | 路径或参数保存在变量中 |
-| `a; b` | 执行 `a` 后总是执行 `b` | 不关心上一步是否失败 |
-| `a && b` | `a` 成功后才执行 `b` | PowerShell 7+ 的简单串联 |
-| `Start-Process` | 启动独立进程并立即继续 | 打开 GUI 软件 |
-| `Start-Process -Wait` | 启动进程并等待它退出 | 安装器、一次性工具 |
+| [`start-app.ps1`](../examples/atoms/start-app.ps1) | 后台启动 GUI | `-FilePath`、`-ArgumentList`、`-Maximized` |
+| [`wait.ps1`](../examples/atoms/wait.ps1) | 固定等待 | `-Seconds` |
+| [`run-rpa.ps1`](../examples/atoms/run-rpa.ps1) | 同步回放鼠标工作流 | `-Workflow` |
+| [`keyboard.ps1`](../examples/atoms/keyboard.ps1) | 输入文字或发送快捷键 | 目标参数加 `-Text` 或 `-Keys` |
+| [`run-command.ps1`](../examples/atoms/run-command.ps1) | 同步执行普通 CLI | `-Name`、`-FilePath`、`-ArgumentList` |
 
-这里的 `&` 是调用运算符，不是 Bash 中的“放到后台”。复杂工作流不要写成一条超长命令；用一行一个动作的 `.ps1` 更容易处理路径、日志和错误。
-
-### 最小示例
+### 4.1 启动软件
 
 ```powershell
+& (Join-Path $Atoms "start-app.ps1") -FilePath "<APP_EXE>" -Maximized
+```
+
+优先使用目标软件自身的命令行能力：
+
+```powershell
+& (Join-Path $Atoms "start-app.ps1") `
+    -FilePath "<APP_EXE>" `
+    -ArgumentList @("<APP_SPECIFIC_ARGUMENT>")
+```
+
+`-Maximized` 只是 Windows 层面的尝试，软件可能不认。如果软件自带最大化、打开网址、打开文件或加载项目等参数，直接写在具体 Series 里，别写进通用原子。
+
+### 4.2 等待
+
+```powershell
+& (Join-Path $Atoms "wait.ps1") -Seconds 2
+```
+
+优先等窗口、进程、文件或端口等明确就绪信号，实在没法检测再用固定等待。
+
+### 4.3 鼠标回放
+
+```powershell
+& (Join-Path $Atoms "run-rpa.ps1") `
+    -Workflow "data/workflows/<WORKFLOW_JSON>"
+```
+
+工作流必须提前录好、真实存在。该原子同步等待回放结束，失败时中断 Series。
+
+### 4.4 键盘输入
+
+向标题稳定的窗口输入文字：
+
+```powershell
+& (Join-Path $Atoms "keyboard.ps1") `
+    -WindowTitle "<WINDOW_TITLE>" `
+    -Text "<TEXT>"
+```
+
+向已经确认的当前前台窗口发送快捷键：
+
+```powershell
+& (Join-Path $Atoms "keyboard.ps1") `
+    -CurrentWindow `
+    -Keys "^s"
+```
+
+常用 SendKeys 写法：
+
+| 操作 | `-Keys` |
+| :--- | :--- |
+| Ctrl+S | `^s` |
+| Ctrl+Enter | `^{ENTER}` |
+| Alt+F4 | `%{F4}` |
+| Tab | `{TAB}` |
+
+文字默认逐字符发送。需要降速时用 `-CharacterDelayMilliseconds`。如果输入还是不稳定，优先用软件原生参数或专用 CLI，不要继续堆键盘模拟。
+
+### 4.5 普通命令
+
+```powershell
+& (Join-Path $Atoms "run-command.ps1") `
+    -Name "<STEP_NAME>" `
+    -FilePath "<CLI>" `
+    -ArgumentList @("<ARGUMENT>")
+```
+
+这个原子用于跑完就退的前台命令。GUI 或者常驻服务用 `start-app.ps1`。
+
+## 5. 组装 Series
+
+参考 [`mouse-keyboard.example.ps1`](../examples/series/mouse-keyboard.example.ps1)，在 `examples/series/` 创建小写短横线命名的脚本：
+
+```powershell
+Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-Start-Process -FilePath "notepad.exe" -WindowStyle Maximized
-Start-Sleep -Seconds 2
+$Atoms = Join-Path $PSScriptRoot "..\atoms"
 
-uv run python main.py run "data/workflows/notepad.json"
-if ($LASTEXITCODE -ne 0) { throw "notepad workflow failed" }
+& (Join-Path $Atoms "start-app.ps1") -FilePath "<APP_EXE>"
+& (Join-Path $Atoms "wait.ps1") -Seconds 2
+& (Join-Path $Atoms "run-rpa.ps1") -Workflow "<WORKFLOW_JSON>"
 
-Start-Process -FilePath "calc.exe"
-Start-Sleep -Seconds 2
-
-uv run python main.py run "data/workflows/calculator.json"
-if ($LASTEXITCODE -ne 0) { throw "calculator workflow failed" }
+Write-Host "[series] complete"
 ```
 
-`-WindowStyle Maximized` 对大多数传统桌面程序有效；部分 Chromium、UWP 或自带窗口管理的软件可能忽略它。这类软件可以使用自身的 `--start-maximized` 参数，或把最大化操作录入回放步骤。
-
-优先把 GUI 软件自身的 `.exe` 传给 `Start-SeriesApp`。`.cmd` / `.bat` 会由 `cmd.exe` 承载，并且可能等待 GUI 软件整个生命周期，造成黑色控制台窗口一直存在。模板检测到这两类启动器时会隐藏其控制台宿主；具体 Series 如果已知真实 GUI 可执行文件，应直接改用 `.exe`。
-
-### Windows 权限边界
-
-Windows UIPI 会拒绝低完整性级别进程向高完整性级别窗口注入鼠标事件。因此，目标软件和 `uv run python main.py run ...` 必须以相同权限运行，建议默认都不使用管理员权限。目标窗口标题含 `[Administrator]` / `管理员`，或者目标软件确实必须提升权限时，应提升整个 Series，使软件启动和 RPA 回放共享同一权限上下文。通用模板不会自动提权；具体 Series 可以在启动任何子进程前完成一次自举提权。
-
-光标成功移动不代表点击已被目标窗口接受。核心执行器检查 `SendInput` 的返回值，注入被拒绝时会终止回放并提示权限不一致，而不是继续执行后续步骤。
-
-## Bash 串联规则
-
-| 写法 | 含义 |
-| :--- | :--- |
-| `a; b` | 无论 `a` 是否成功都执行 `b` |
-| `a && b` | 仅当 `a` 成功时执行 `b` |
-| `a &` | 在后台启动 `a`，脚本立即继续 |
-| `a & pid=$!; wait "$pid"` | 后台启动并在稍后等待 |
-| `set -Eeuo pipefail` | 未处理错误、未定义变量或管道失败时停止 |
-
-### 最小示例
-
-```bash
-#!/usr/bin/env bash
-set -Eeuo pipefail
-
-notepad.exe &
-sleep 2
-uv run python main.py run "data/workflows/notepad.json"
-
-calc.exe &
-sleep 2
-uv run python main.py run "data/workflows/calculator.json"
-```
-
-Bash 下如何最大化窗口取决于运行环境。例如 Linux/X11 可以使用 `wmctrl`，Git Bash 调用 Windows GUI 时则更适合把窗口准备动作放进 PowerShell 小函数或录制工作流。
-
-## 推荐的 Series 结构
-
-模板提供四个小函数，它们只是常见操作的便捷封装，不限制 Series 中能执行的命令：
-
-1. `Invoke-SeriesCommand` / `run_command`：执行任意前台命令，并在失败时停止；
-2. `Start-SeriesApp` / `start_app`：在后台启动 GUI 软件或长期进程；
-3. `Wait-SeriesReady` / `wait_ready`：等待固定时间或明确的就绪条件；
-4. `Invoke-SeriesRpa` / `run_rpa`：回放指定 JSON，是针对本项目的便捷适配器。
-
-普通命令可以直接写在脚本中，也可以通过通用函数获得统一日志和错误处理。重复出现且有独立校验逻辑的命令，再封装为类似 `Invoke-SeriesRpa` 的专用函数。Series 只负责步骤之间的顺序和边界，每个组件仍可独立替换。
-
-### 任意命令示例
+统一用以下方式启动。`-NoProfile` 是启动命令的一部分，不写进 Series 脚本或原子调用：
 
 ```powershell
-Invoke-SeriesCommand -Name "prepare input" -FilePath "python" -ArgumentList @(
-    "scripts/prepare.py",
-    "--input",
-    "data/input.json"
-)
-
-Invoke-SeriesRpa -Workflow "data/workflows/editor.json"
-
-Invoke-SeriesCommand -Name "run tests" -FilePath "uv" -ArgumentList @(
-    "run",
-    "python",
-    "-m",
-    "unittest",
-    "discover"
-)
+pwsh -NoProfile -File examples/series/<series-name>.ps1
 ```
 
-## 等待策略
+具体 Series 可以删除、重复或重新排列原子调用，但不能复制原子的内部实现。
 
-GUI 软件通常由启动命令在后台运行，而 RPA 必须等界面可操作后才能开始。按可靠性从高到低选择：
+## 6. 自定义原子规范
 
-1. 等待目标窗口出现并可激活；
-2. 等待目标进程和窗口句柄；
-3. 等待文件、端口或其他业务就绪信号；
-4. 最后才使用固定 `Start-Sleep` / `sleep`。
+只有现有原子确实表达不了才新增。
 
-当前模板使用固定等待以保持零额外依赖。流程稳定后，可以只替换 `Wait-SeriesReady`，不需要修改其他步骤。
+- 一个原子只完成一个可独立验证的动作；
+- 通过参数接收路径和业务数据，不写死具体软件或工作流；
+- 成功时正常结束，失败时 `throw` 或返回非零退出码；
+- 文件放在 `examples/atoms/`，文件名使用小写短横线；
+- 不修改与当前动作无关的原子。
 
-## 错误处理
+## 7. 安全与失败规则
 
-- GUI 启动失败：立即停止，不要继续向错误窗口发送点击；
-- RPA 回放返回非零退出码：停止 Series，并输出工作流路径；
-- 可恢复步骤：在函数外显式重试，避免所有命令被无条件重复；
-- 路径：脚本先切换到项目根目录，避免从不同目录启动时找不到 `main.py` 或 JSON；
-- 日志：每一步开始和结束都输出稳定名称，方便定位失败位置。
+- RPA、键盘原子和目标软件必须用同一个 Windows 权限跑；
+- 原子失败后立即停止，不忽略非零退出码；
+- 路径、窗口标题、工作流或等待时间不明确时先询问，不能猜测；
+- `-CurrentWindow` 只能在前一步已经保证正确窗口位于前台时使用；
+- 具体脚本若使用 `exit 0`，必须确认它作为独立进程运行，不能被其他脚本点源加载。
 
-## 使用前提
+## 8. 文档与语言规范
 
-在让 AI 生成串联脚本前，必须先确认两件事：
+- 文件名：小写短横线，例如 `export-report.ps1`；
+- PowerShell 参数：PascalCase，例如 `-WindowTitle`；
+- 未确定值：大写占位符，例如 `<WORKFLOW_JSON>`；
+- 进度日志：以 `[series]` 开头；
+- 错误信息：说明失败步骤和目标对象；
+- 文档说明使用中文；代码标识、命令和路径保持原文；
+- 同一概念始终使用同一个名称。
 
-1. **录制文件是否已存在** — 回放依赖 `data/workflows/` 下的 JSON 文件，必须先录制或确认已有；
-2. **文件路径是否正确** — 指定给 AI 的工作流路径必须是真实存在的文件，否则脚本会在 `Invoke-SeriesRpa` / `run_rpa` 中报错退出。
+## 9. 视觉模型边界
 
-Windows 下还要确认目标软件与回放脚本的权限级别一致，并优先提供 GUI `.exe` 路径而不是 `.cmd` / `.bat` 启动器。
-
-AI 生成脚本后，如果它使用了 `<PLACEHOLDER>` 占位，你需要提供具体的程序路径、窗口标题和已录制 JSON 路径。
-
-## 给 AI 的生成指令
+视觉模型当前不创建原子或模板。未来确定真实 CLI 后，才按原子规范接入：
 
 ```text
-请把我的多命令任务生成为 Series 脚本并保存到项目中。任务可以包含任意 CLI、脚本、GUI 软件和 RPA 回放，不要把 Series 限制为桌面自动化。
-
-输入：
-- TARGET_SHELL: <powershell|bash>
-- SERIES_NAME: <小写短横线名称>
-- TASK: <描述要按顺序执行的命令、脚本、软件、RPA 回放和最终结果>
-
-执行规则：
-1. 第一步必须完整阅读对应模板，确认现有函数签名：
-   - powershell：examples/series.template.ps1
-   - bash：examples/series.template.sh
-2. 检查 TASK 引用的工作流文件是否真实存在；缺失时先向用户确认，不猜测路径。
-3. 基于模板生成脚本，不重新发明同用途函数，也不改变模板的错误处理方式：
-   - 任意前台命令使用 Invoke-SeriesCommand / run_command；
-   - GUI 或长期进程使用 Start-SeriesApp / start_app；
-   - 就绪等待使用 Wait-SeriesReady / wait_ready；
-   - RPA 回放使用 Invoke-SeriesRpa / run_rpa。
-4. 前台命令按书写顺序执行；GUI 软件或长期进程在后台启动，并在后续步骤依赖它们时显式等待就绪。
-5. RPA 命令统一为 uv run python main.py run <JSON路径>。
-6. 路径放在参数或脚本顶部变量中并正确引用；禁止 eval 和命令字符串拼接。
-7. 默认任一步失败就停止；不得忽略 PowerShell 的 $LASTEXITCODE 或 Bash 的非零退出码。
-8. 不确定的程序路径、等待时间和工作流路径使用 <PLACEHOLDER>，不得虚构实际值。
-9. 将结果直接保存到：
-   - powershell：examples/series/<SERIES_NAME>.ps1
-   - bash：examples/series/<SERIES_NAME>.sh
-10. 保存后执行语法检查：PowerShell 使用语言 Parser，Bash 使用 bash -n。
-11. 最终回复只需给出产物路径、语法检查结果和仍需替换的占位符。
+run-rpa 产出截图
+    → 外部视觉 CLI 读取图片
+    → 返回退出码和可选 JSON
+    → Series 决定停止或继续
 ```
 
-## 什么时候才需要独立 runner
+外部视觉工具不读取 RPA 工作流、不负责截图，也不在精确回放中实时决定点击位置。
 
-当出现以下情况时，再考虑增加一个极小的 `series run`：
+## 10. 交付检查
 
-- 大量脚本需要统一重试、超时和结构化日志；
-- 需要从别的程序动态拼装步骤，而不是人工维护脚本；
-- 需要跨 PowerShell 和 Bash 使用同一份流程定义；
-- 需要暂停、恢复或可视化执行状态。
+Agent 完成 Series 后必须检查：
 
-在此之前，原生脚本本身就是最轻、最透明、最好调试的 Series runner。
+- [ ] 使用的程序和工作流路径真实存在；
+- [ ] 没有遗留 `<PLACEHOLDER>`；
+- [ ] 只读取并调用了需要的原子；
+- [ ] 键盘目标和窗口前台条件明确；
+- [ ] 等待策略符合目标软件特性；
+- [ ] PowerShell Parser 未报告语法错误；
+- [ ] 最终回复列出脚本路径、使用的原子和检查结果。

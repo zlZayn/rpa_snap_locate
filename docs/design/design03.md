@@ -1,4 +1,4 @@
-# 截图作为时间线一等事件
+# 截图作为时间线一等事件（已过时）
 
 **状态**：计划中，未实现
 **目标版本**：5.1
@@ -60,7 +60,7 @@ F3 可以在录制中的任何时刻按，截图 event 的 `offset_ns` 由 `Inpu
 ### 需要修改的文件
 
 | 文件 | 改动 |
-|------|------|
+| --- | --- |
 | `engine/recorder_engine.py` | `_timeline_f3` 不再追加 `_capture_regions`，改为在 `InputEventRecorder` 的时间线上记录截图事件 |
 | `engine/input_event_recorder.py` | 新增 `capture_screenshot(region)` 方法，往队列写入一条 screenshot 类型的 raw_event；`_build_workflow_events` 转换时保留 type、region |
 | `engine/workflow_validator.py` | 允许 type `screenshot`，不参与 down/up 配对校验；必须包含 `region` |

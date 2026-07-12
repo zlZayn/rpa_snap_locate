@@ -223,6 +223,34 @@ class TimelineRecorderEngineTests(unittest.TestCase):
 
         self.assertEqual(self.engine._events, events)
 
+    def test_appending_segment_keeps_its_initial_wait_but_not_pause_time(self) -> None:
+        self.engine._events = [
+            {"index": 1, "type": "mouse_down", "offset_ns": 100},
+            {
+                "index": 2,
+                "type": "mouse_up",
+                "offset_ns": 150,
+                "position_from_event": 1,
+            },
+        ]
+        next_segment = [
+            {"index": 1, "type": "mouse_down", "offset_ns": 30},
+            {
+                "index": 2,
+                "type": "mouse_up",
+                "offset_ns": 80,
+                "position_from_event": 1,
+            },
+        ]
+
+        self.engine._append_timeline_events(next_segment)
+
+        self.assertEqual(
+            [event["offset_ns"] for event in self.engine._events],
+            [100, 150, 180, 230],
+        )
+        self.assertEqual(self.engine._events[3]["position_from_event"], 3)
+
     def test_clear_cancels_recording(self) -> None:
         self.engine.state = RecorderState.RECORDING
         message = self.engine.clear()

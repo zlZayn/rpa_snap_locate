@@ -34,7 +34,7 @@ def _record(recorder, events, timestamps):
         return recorder.stop_recording()
 
 
-def test_first_event_is_zero_and_uses_cursor_position_at_start():
+def test_first_event_keeps_wait_since_f2_and_uses_cursor_position_at_start():
     recorder, _ = _make_recorder()
     events = _record(
         recorder,
@@ -42,13 +42,13 @@ def test_first_event_is_zero_and_uses_cursor_position_at_start():
             mouse.ButtonEvent("down", "left", 0),
             mouse.ButtonEvent("up", "left", 0),
         ],
-        [1_000, 1_075],
+        [500, 1_000, 1_075],
     )
 
-    assert events[0]["offset_ns"] == 0
+    assert events[0]["offset_ns"] == 500
     assert events[0]["norm_x"] == 0.3
     assert events[0]["norm_y"] == 0.4
-    assert events[1]["offset_ns"] == 75
+    assert events[1]["offset_ns"] == 575
     validate_v5_events(events)
 
 
@@ -62,7 +62,7 @@ def test_interleaved_buttons_pair_with_their_own_down_event():
             mouse.ButtonEvent("up", "left", 0),
             mouse.ButtonEvent("up", "right", 0),
         ],
-        [100, 110, 120, 130],
+        [50, 100, 110, 120, 130],
     )
 
     assert events[2]["position_from_event"] == 1
@@ -80,7 +80,7 @@ def test_windows_double_event_is_preserved_as_second_down():
             mouse.ButtonEvent("double", "left", 0),
             mouse.ButtonEvent("up", "left", 0),
         ],
-        [100, 150, 220, 270],
+        [50, 100, 150, 220, 270],
     )
 
     assert [event["type"] for event in events] == [
@@ -92,6 +92,5 @@ def test_windows_double_event_is_preserved_as_second_down():
     assert events[1]["position_from_event"] == 1
     assert events[3]["position_from_event"] == 3
     validate_v5_events(events)
-
 
 

@@ -35,7 +35,7 @@ There is one main flow to remember:
 3. Press Ctrl+S to save (it stops recording first if active).
 4. Press F5 to replay the saved file.
 
-Pressing F2 to stop and then Ctrl+S works the same way. Press F2 between segments only when you want to record in parts and save everything at once. Time between segments is not recorded.
+Timing starts when F2 starts recording, so replay also preserves the wait before the first mouse action. Pressing F2 to stop and then Ctrl+S works the same way. Press F2 between segments only when you want to record in parts and save everything at once. Time between segments is not recorded; timing resumes only after F2 starts the next segment.
 
 You can also replay a chosen file:
 
@@ -114,11 +114,13 @@ Windows rejects mouse actions when the permission levels do not match. The tool 
 
 To open an application, wait for it, and then run a recording, see:
 
-- [PowerShell template](examples/series.template.ps1)
-- [Shell template](examples/series.template.sh)
+- [PowerShell composition example](examples/series/mouse-keyboard.example.ps1)
+- [Atomic scripts to compose as needed](examples/atoms/)
 - [Series guide](docs/COMMAND_SERIES.md)
 
 On Windows, launch the application's `.exe` file directly when possible.
+
+This project does not record keyboard input or support dragging. When keyboard input is needed, run AutoHotkey, PowerShell, or another command-line keyboard automation script as a separate Series step before, between, or after mouse workflows; see the [Series guide](docs/COMMAND_SERIES.md).
 
 ## Requirements
 

@@ -14,7 +14,7 @@
 - 保存一次回放的前后快照和回放报告；
 - 读取并运行只保存点击位置和顺序的逐步点击工作流。
 
-当前不负责键盘按键时间线、鼠标移动轨迹、拖拽、滚轮、真正的图像匹配或 LLM 定位。`LLMLocator`、界面变化检测和图像特征工具仍是预留模块。
+当前不负责键盘按键时间线、鼠标移动轨迹、拖拽、滚轮、真正的图像匹配或 LLM 定位。键盘自动化与未来可能采用的视觉模型均通过 Command Series 调用外部工具，不进入本项目内核；界面变化检测和图像特征工具仍是预留模块。
 
 ## 2. 总体结构
 
@@ -84,8 +84,7 @@ rpa_snap_locate/
 │   ├── action_executor.py          Windows 前台窗口、鼠标移动、SendInput
 │   ├── locator_protocol.py         定位接口和工厂
 │   └── locators/
-│       ├── fixed_locator.py        归一化坐标转当前物理坐标
-│       └── llm_locator.py          预留，尚未实现
+│       └── fixed_locator.py        归一化坐标转当前物理坐标
 ├── data/
 │   ├── data_manager.py             两种工作流 JSON 的保存与读取
 │   ├── workflows/                  已保存工作流
@@ -140,7 +139,7 @@ stateDiagram-v2
     IDLE --> IDLE: Ctrl+S 保存已停止的事件
 ```
 
-F2 停止后，`InputEventRecorder.stop_recording()` 返回的事件会通过 `_append_timeline_events()` 合并进 `RecorderEngine._events`，因此用户可以稍后按 Ctrl+S 保存。再次开始一个片段时，编号和时间偏移会重新映射，避免不同片段出现重复编号；暂停区间本身不会进入时间线。
+F2 停止后，`InputEventRecorder.stop_recording()` 返回的事件会通过 `_append_timeline_events()` 合并进 `RecorderEngine._events`，因此用户可以稍后按 Ctrl+S 保存。每次按 F2 开始或继续录制都会建立一个新的片段时间原点，第一次事件前的等待会被保留；合并时编号和时间偏移会重新映射，暂停区间本身不会进入时间线。
 
 ### 6.2 原始事件采集
 
@@ -148,10 +147,10 @@ F2 停止后，`InputEventRecorder.stop_recording()` 返回的事件会通过 `_
 
 1. 进入回调后立即读取 `time.perf_counter_ns()`。
 2. MoveEvent 只更新最后位置，不写入工作流。
-3. 首个 ButtonEvent 建立 `_origin`，所以首个输入的 `offset_ns` 为 0。
+3. F2 开始录制时建立 `_origin`，所以首个输入的 `offset_ns` 是它距 F2 开始录制的时间。
 4. Windows 下 `mouse` 库会把双击的第二次按下报告为 `double`；采集器将它还原成第二个 down，再与随后的 up 配对。
 5. down/up 被写入有上限的线程安全队列。
-6. F3 注入一条 `screenshot` 类型的事件到时间线，`offset_ns` 为第二次 F3 按下时距首个事件的时间。框选不改变事件定位方法。
+6. F3 注入一条 `screenshot` 类型的事件到时间线，`offset_ns` 为第二次 F3 按下时距本段 F2 开始录制的时间。框选不改变事件定位方法。
 
 录制启动时会读取一次当前鼠标位置。因此即使用户按 F2 后不移动鼠标就点击，也不会把第一次点击错误记录为 `(0, 0)`。
 
@@ -197,7 +196,7 @@ mouse_down #1 → mouse_up #1 → mouse_down #2 → mouse_up #2
   "timeline": {
     "clock": "monotonic",
     "unit": "ns",
-    "zero": "first_input_event"
+    "zero": "recording_segment_started"
   },
   "events": [
     {
@@ -262,9 +261,9 @@ InputEventRecorder
   → 当前物理坐标
 ```
 
-### 9.2 llm
+### 9.2 不支持的定位方式
 
-工厂已接受 `method: llm`，但 `LLMLocator.locate()` 仍抛出 `NotImplementedError`，不能用于生产工作流。
+定位工厂当前只接受 `method: fixed`。`llm` 不属于本项目工作流的定位方式；未来如需视觉模型分析，由 Command Series 在回放后调用外部项目处理 F3 截图。
 
 ## 10. 时间线工作流的回放链路
 
@@ -478,7 +477,7 @@ data/
 ## 19. 已知限制与扩展点
 
 - 只录制鼠标按钮，不录制键盘、滚轮和移动轨迹。
-- 拖拽不是正式支持场景；虽然 down/up 可跨位置发生，当前 up 不保存独立坐标。
+- 拖拽明确不支持；工作流不保存鼠标移动轨迹，mouse_up 也不保存独立坐标，不能可靠还原拖拽。
 - 框选（F3）向时间线注入 screenshot 事件，由调度器在回放中途对 region 截图保存到 screenshots/，不改变事件定位。
 - Windows/Python 不是硬实时环境，严格调度能减少累计漂移，但不能保证零误差。
 - `timing_mode`、`evidence_mode` 和框选超时配置尚未形成可切换行为。

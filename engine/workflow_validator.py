@@ -116,9 +116,6 @@ def validate_v5_events(events: list[dict]) -> None:
             f"{sorted(open_down_by_button.values())}"
         )
 
-    if events[0]["offset_ns"] != 0:
-        raise ValidationError("first input event must have offset_ns 0")
-
     screenshot_count = sum(1 for e in events if e["type"] == "screenshot")
     logger.info(
         "v5 validation passed: %d events (%d down, %d up, %d screenshot)",

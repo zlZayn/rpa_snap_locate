@@ -180,10 +180,9 @@ class TestV5Validation:
         with pytest.raises(ValidationError, match="pressed again"):
             validate_v5_events(events)
 
-    def test_first_event_must_define_zero(self):
+    def test_first_event_may_include_wait_since_recording_started(self):
         events = [
             _make_down(index=1, offset_ns=100),
             _make_up(index=2, offset_ns=200, position_from_event=1),
         ]
-        with pytest.raises(ValidationError, match="offset_ns 0"):
-            validate_v5_events(events)
+        validate_v5_events(events)

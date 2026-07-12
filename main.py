@@ -136,7 +136,7 @@ def cmd_record():
             logger.error("【保存】失败：%s", msg.removeprefix("save failed: "))
 
     def on_clear():
-        msg = recorder.clear()
+        recorder.clear()
         logger.info("【清空】尚未保存的内容已清除。按 F2 可重新开始。")
 
     def on_help():
@@ -160,7 +160,7 @@ def cmd_record():
 def cmd_run(workflow_path: str):
     config = ConfigManager()
     config.load()
-    logger = setup_logger(
+    setup_logger(
         name="rpa_snap_locate",
         log_dir=config.get("paths", "logs_dir", default="logs"),
     )

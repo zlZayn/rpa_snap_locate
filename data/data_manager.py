@@ -52,7 +52,7 @@ class DataManager:
             "timeline": {
                 "clock": "monotonic",
                 "unit": "ns",
-                "zero": "first_input_event",
+                "zero": "recording_segment_started",
             },
             "events": events,
         }
