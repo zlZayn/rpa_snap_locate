@@ -30,7 +30,7 @@ flowchart LR
 
     M --> PR["PipelineRunner"]
     W --> PR
-    PR --> V["WorkflowValidator"]
+    PR --> V["validate_v5_events()"]
     PR --> L["Locator"]
     PR --> S["TimelineScheduler"]
     S --> A["ActionExecutor"]
@@ -42,7 +42,7 @@ flowchart LR
 
 1. `RecorderEngine` 管理用户看到的录制状态，但不直接监听物理鼠标。
 2. `InputEventRecorder` 负责尽快接收原始鼠标事件并给它们加时间。
-3. `DataManager` 在写入时间线工作流前调用 `WorkflowValidator`，不允许把不完整事件保存成有效文件。
+3. `DataManager` 在写入时间线工作流前调用 `validate_v5_events()`，不允许把不完整事件保存成有效文件。
 4. `PipelineRunner` 负责一次回放的完整生命周期，并把具体时间调度交给 `TimelineScheduler`。
 5. `TimelineScheduler` 决定何时发送事件，`ActionExecutor` 只负责 Windows 窗口准备、鼠标移动和实际注入。
 
@@ -234,7 +234,7 @@ mouse_down #1 → mouse_up #1 → mouse_down #2 → mouse_up #2
 - type 支持 `mouse_down` / `mouse_up` / `screenshot`；
 - button 只能是 `left` / `right` / `middle`（screenshot 类型没有 button）；
 - screenshot 必须包含 `region` 字段；
-- offset 是非负整数，第一条为 0，整体按 `(offset_ns, index)` 排序；
+- offset 是非负整数，整体按 `(offset_ns, index)` 排序（首事件 offset 可以大于 0）；
 - down 包含定位字段，up 不得携带自己的定位字段；
 - 同一按钮不能在未抬起时再次按下；
 - 每个 up 必须指向更早、同按钮、尚未配对的 down；
@@ -326,7 +326,7 @@ lateness_ns = max(0, actual_time - deadline)
 
 若任一事件超过 `replay.late_warning_ms`，报告状态为 `degraded`；否则为 `nominal`。报告中的每条 execution 包含 index、计划偏移、实际偏移和迟到量。
 
-Scheduler 维护当前已按下按钮集合。如果回放在 down 与 up 之间异常中断，`finally` 会尝试补发 up，降低鼠标保持按下状态的风险；补发失败会记录异常。
+Scheduler 维护当前已按下按钮集合。如果回放在 down 与 up 之间异常中断，`finally` 会尝试补发 up，降低鼠标保持按下状态的风险；补发失败会记录异常。补发成功或失败时，除日志外还会在终端打印 `[rpa]` 前缀的提示，让不看日志的用户也能注意到。
 
 ## 12. Windows 输入执行
 
@@ -440,11 +440,8 @@ data/
 | `paths.logs_dir` | `logs/` | 日志输出 |
 | `recorder.mode` | timeline | 选择时间线录制或逐步点击录制 |
 | `recorder.event_queue_limit` | 10000 | 原始按钮事件队列上限 |
-| `recorder.box_select_timeout_seconds` | 10 | 已读取，但当前没有定时器执行超时取消 |
 | `replay.start_delay_seconds` | 0 | 整条回放开始前等待 |
 | `replay.late_warning_ms` | 10 | 时间线回放判断 degraded 的迟到阈值 |
-| `replay.timing_mode` | strict | 配置已声明，当前时间线回放始终使用严格调度 |
-| `replay.evidence_mode` | burst | 配置已声明，当前时间线回放始终使用整段前后快照 |
 
 文档明确区分“已声明”和“已驱动分支”的配置，避免维护者误以为修改保留字段会改变运行行为。
 
@@ -464,8 +461,8 @@ data/
 
 | 测试文件 | 覆盖重点 |
 | :--- | :--- |
-| `test_input_event_recorder.py` | 首事件归零、首击坐标、按钮交错、取消清理 |
-| `test_recorder_engine.py` | 两种录制状态、F2 停止保留、保存与清空 |
+| `test_input_event_recorder.py` | 首事件等待、首击坐标、按钮交错、双击还原 |
+| `test_recorder_engine.py` | 两种录制状态、F2 停止保留、保存与清空、框选取消、清空取消 |
 | `test_workflow_validator.py` | 排序、字段、按钮一致、一对一配对、未闭合输入 |
 | `test_timeline_scheduler.py` | 准备耗时计入迟到、异常释放按钮 |
 | `test_action_executor.py` | SendInput、UIPI 错误、左右中按钮标志、窗口复用 |
@@ -480,6 +477,5 @@ data/
 - 拖拽明确不支持；工作流不保存鼠标移动轨迹，mouse_up 也不保存独立坐标，不能可靠还原拖拽。
 - 框选（F3）向时间线注入 screenshot 事件，由调度器在回放中途对 region 截图保存到 screenshots/，不改变事件定位。
 - Windows/Python 不是硬实时环境，严格调度能减少累计漂移，但不能保证零误差。
-- `timing_mode`、`evidence_mode` 和框选超时配置尚未形成可切换行为。
 
 扩展时应保持三个边界：输入采集回调必须轻量；工作流必须在保存和执行前校验；任何耗时证据采集不得进入严格事件注入路径。

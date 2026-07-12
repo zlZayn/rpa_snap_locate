@@ -38,9 +38,6 @@ class RecorderEngine:
         self._box_point2: Optional[tuple[int, int]] = None
         self._box_region: Optional[dict] = None
         self._cancel_event = threading.Event()
-        self._timeout_seconds = self._config.get(
-            "recorder", "box_select_timeout_seconds", default=10
-        )
         self._ts = self._data_manager.new_ts()
         self._last_saved_path: str | None = None
 
