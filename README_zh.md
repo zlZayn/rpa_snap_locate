@@ -114,8 +114,8 @@ data/recordings/<录制文件名>/<回放时间>/
 
 如果需要先打开软件、等待它准备好、再自动回放，可参考：
 
-- [PowerShell 串联示例](examples/series/mouse-keyboard.example.ps1)
-- [可按需组合的原子脚本](examples/atoms/)
+- [PowerShell 串联示例](series/mouse-keyboard.example.ps1)
+- [可按需组合的原子脚本](series/atoms/)
 - [串联脚本说明](docs/COMMAND_SERIES.md)
 
 Windows 下尽量直接启动软件的 `.exe` 文件。

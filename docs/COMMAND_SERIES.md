@@ -160,7 +160,7 @@ Agent 必须按以下顺序工作：
 | Alt+F4 | `%{F4}` |
 | Tab | `{TAB}` |
 
-文字默认逐字符发送。需要降速时用 `-CharacterDelayMilliseconds`。如果输入还是不稳定，优先用软件原生参数或专用 CLI，不要继续堆键盘模拟。
+文字默认逐字符发送。需要降速时用 `-CharacterDelayMilliseconds`。窗口激活耗时可通过 `-AfterActivateMilliseconds` 调整（默认 200ms）。如果输入还是不稳定，优先用软件原生参数或专用 CLI，不要继续堆键盘模拟。
 
 中文等 Unicode 文本不受 SendKeys 支持，应改用 [`paste.ps1`](#46-剪贴板粘贴) 通过剪贴板粘贴。
 
@@ -194,6 +194,8 @@ Agent 必须按以下顺序工作：
 ```
 
 原理：`Set-Clipboard` 写入文本，再通过 `SendKeys` 发送 `Ctrl+V`。因此对任何支持剪贴板粘贴的控件都有效。
+
+窗口激活耗时可通过 `-AfterActivateMilliseconds` 调整（默认 200ms）。
 
 部分终端使用 `Ctrl+Shift+V` 粘贴，用 `-ShiftControlV` 开关：
 

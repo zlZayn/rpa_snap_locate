@@ -114,8 +114,8 @@ Windows rejects mouse actions when the permission levels do not match. The tool 
 
 To open an application, wait for it, and then run a recording, see:
 
-- [PowerShell composition example](examples/series/mouse-keyboard.example.ps1)
-- [Atomic scripts to compose as needed](examples/atoms/)
+- [PowerShell composition example](series/mouse-keyboard.example.ps1)
+- [Atomic scripts to compose as needed](series/atoms/)
 - [Series guide](docs/COMMAND_SERIES.md)
 
 On Windows, launch the application's `.exe` file directly when possible.
