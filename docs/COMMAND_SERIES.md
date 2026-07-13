@@ -61,7 +61,7 @@ Agent 必须按以下顺序工作：
 | [`wait.ps1`](../series/atoms/wait.ps1) | 固定等待 | `-Seconds` |
 | [`run-rpa.ps1`](../series/atoms/run-rpa.ps1) | 同步回放鼠标工作流 | `-Workflow` |
 | [`send-keys.ps1`](../series/atoms/send-keys.ps1) | 输入文字或发送快捷键 | 目标参数加 `-Text` 或 `-Keys` |
-| [`paste.ps1`](../series/atoms/paste.ps1) | 剪贴板粘贴文本（支持中文等 Unicode） | `-Text`、`-WindowTitle` / `-CurrentWindow` |
+| [`paste.ps1`](../series/atoms/paste.ps1) | 剪贴板粘贴文本（支持中文等 Unicode） | `-Text`、`-WindowTitle` / `-CurrentWindow`、`-ShiftControlV` |
 | [`run-command.ps1`](../series/atoms/run-command.ps1) | 同步执行普通 CLI | `-Name`、`-FilePath`、`-ArgumentList` |
 | [`wait-stable.ps1`](../series/atoms/wait-stable.ps1) | 等待画面停止变化（纯内存截屏对比） | `-IntervalSecond`、`-Threshold`、`-TimeoutSecond` |
 
