@@ -63,6 +63,7 @@ Agent 必须按以下顺序工作：
 | [`send-keys.ps1`](../series/atoms/send-keys.ps1) | 输入文字或发送快捷键 | 目标参数加 `-Text` 或 `-Keys` |
 | [`paste.ps1`](../series/atoms/paste.ps1) | 剪贴板粘贴文本（支持中文等 Unicode） | `-Text`、`-WindowTitle` / `-CurrentWindow` |
 | [`run-command.ps1`](../series/atoms/run-command.ps1) | 同步执行普通 CLI | `-Name`、`-FilePath`、`-ArgumentList` |
+| [`wait-stable.ps1`](../series/atoms/wait-stable.ps1) | 等待画面停止变化（纯内存截屏对比） | `-IntervalSecond`、`-Threshold`、`-TimeoutSecond` |
 
 ### 4.1 启动软件
 
@@ -202,6 +203,27 @@ Agent 必须按以下顺序工作：
     -ShiftControlV `
     -Text "你好"
 ```
+
+### 4.7 等待画面稳定
+
+等待屏幕内容不再变化（如 AI 回复流式输出结束），纯内存截屏对比，无磁盘写入：
+
+```powershell
+if (-not (& (Join-Path $Atoms "wait-stable.ps1") `
+    -IntervalSecond 2 -Threshold 0.99 -TimeoutSecond 30)) {
+    throw "画面未在 30 秒内稳定，终止工作流"
+}
+```
+
+参数：
+
+| 参数 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `-IntervalSecond` | 1 | 两次截屏对比的间隔（秒） |
+| `-Threshold` | 0.99 | 稳定判定阈值（像素匹配比例），0.99=允许 1% 像素变化 |
+| `-TimeoutSecond` | 30 | 超时秒数，超时返回 `$false` |
+
+画面稳定后返回 `$true`，超时返回 `$false`。
 
 ## 5. 组装 Series
 
