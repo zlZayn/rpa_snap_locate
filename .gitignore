@@ -17,3 +17,6 @@ data/workflows/
 
 # Historical design docs (archived)
 docs/design/
+
+# User-customizable series scripts
+series/mine/

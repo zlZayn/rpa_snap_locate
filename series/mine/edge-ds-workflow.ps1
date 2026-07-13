@@ -16,7 +16,7 @@ $Atoms = Join-Path $PSScriptRoot "..\atoms"
 & (Join-Path $Atoms "run-rpa.ps1") -Workflow $Workflow
 
 Write-Host "[series] closing Edge"
-& (Join-Path $Atoms "keyboard.ps1") -CurrentWindow -Keys "%{F4}"
+& (Join-Path $Atoms "send-keys.ps1") -CurrentWindow -Keys "%{F4}"
 Start-Sleep -Seconds 1
 
 Write-Host "[series] complete"
