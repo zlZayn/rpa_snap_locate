@@ -55,7 +55,7 @@ uv run python main.py run data/workflows/<文件名>.json
 | F3 | 框选截图范围：按两次 F3 标记矩形区域，回放时自动截图保存；不改变点击定位方式 |
 | F5 | 回放最近保存的文件 |
 
-### 使用框选截图
+**使用框选截图：**
 
 先按 F2 开始录制，然后：
 
@@ -69,8 +69,6 @@ uv run python main.py run data/workflows/<文件名>.json
 - F3 提示无法使用：先按 F2 开始录制，再进行框选。
 - 保存提示鼠标没有松开：按 Ctrl+Delete 清空，再重新录制一次。
 - F5 提示有未保存内容：先按 Ctrl+S 保存，或者按 Ctrl+Delete 放弃。
-- 想查看最近保存了哪个文件：保存成功后终端会显示完整路径。
-- 忘记按键：按 F1，终端会重新显示主流程。
 
 ## 回放结果
 
@@ -86,7 +84,7 @@ data/workflows/
 data/recordings/<录制文件名>/<回放时间>/
 ```
 
-如果某次操作比预期超时较多，`replay_report.json` 会把本次回放标记为 `degraded`。这通常表示当时电脑繁忙、窗口切换较慢，或录制的操作本身间隔过短。
+如果某次操作比预期超时较多，`replay_report.json` 会把本次回放标记为 `degraded`。这通常表示当时电脑繁忙、窗口切换较慢，或录制的操作本身间隔过短。degraded 不会中断回放，所有操作仍然执行。如果频繁出现，可尝试关闭后台程序或适当拉开操作间隔。
 
 ## 常用设置
 
@@ -100,6 +98,8 @@ data/recordings/<录制文件名>/<回放时间>/
 | `replay.late_warning_ms` | `10` | 操作晚于计划多少毫秒时给出提醒 |
 
 通常只需要调整 `start_delay_seconds`。例如设为 `2`，运行回放后会先等两秒。
+
+完整配置项列表（屏幕、DPI、路径、队列上限等）请参考[架构文档中的配置章节](docs/ARCHITECTURE.md#16-配置项及真实生效状态)。
 
 ## Windows 权限
 

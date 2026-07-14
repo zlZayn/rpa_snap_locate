@@ -55,7 +55,7 @@ uv run python main.py run data/workflows/<file>.json
 | F3 | Area selection: press F3 twice to mark a rectangle for screenshot capture during replay; recording continues normally |
 | F5 | Replay the most recently saved file |
 
-### Selecting a capture area
+**Selecting a capture area:**
 
 Press F2 to start recording, then:
 
@@ -69,8 +69,6 @@ The area is added as a screenshot event in the timeline and captured at the righ
 - F3 says it cannot be used: press F2 first, then select the area.
 - Saving says a mouse button was not released: press Ctrl+Delete and record again.
 - F5 says there are unsaved actions: press Ctrl+S to save or Ctrl+Delete to discard them.
-- To see which file was saved, read the full path printed after a successful save.
-- If you forget the keys, press F1 to show the main flow again.
 
 ## Replay results
 
@@ -86,7 +84,7 @@ Each replay stores its before picture, after picture, and timing report in:
 data/recordings/<recording-name>/<replay-time>/
 ```
 
-If an action runs much later than planned, `replay_report.json` marks the replay as `degraded`. This usually means the computer was busy, switching windows was slow, or the recorded actions were extremely close together.
+If an action runs much later than planned, `replay_report.json` marks the replay as `degraded`. This usually means the computer was busy, switching windows was slow, or the recorded actions were extremely close together. A degraded status does not stop the replay—all actions still execute. If it happens often, try closing background programs or leaving more room between clicks.
 
 ## Common settings
 
@@ -100,6 +98,8 @@ Edit `config/system.yaml`:
 | `replay.late_warning_ms` | `10` | Report actions that run this many milliseconds late |
 
 Most users only need `start_delay_seconds`. Set it to `2`, for example, to wait two seconds before playback begins.
+
+For the full list of settings (screen, DPI, paths, queue limit), see the [configuration reference](docs/ARCHITECTURE.md#16-配置项及真实生效状态) in the architecture guide.
 
 ## Windows permissions
 
