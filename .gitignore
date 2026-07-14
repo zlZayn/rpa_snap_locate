@@ -20,3 +20,6 @@ docs/design/
 
 # User-customizable series scripts
 series/mine/
+
+# OpenCode internal state
+.omo/
