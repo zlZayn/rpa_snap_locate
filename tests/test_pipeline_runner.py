@@ -13,11 +13,11 @@ def _write_workflow(tmp_path, workflow):
     return str(path)
 
 
-def test_unknown_workflow_version_is_rejected(tmp_path):
-    path = _write_workflow(tmp_path, {"version": "99.0", "events": []})
+def test_unknown_workflow_format_is_rejected(tmp_path):
+    path = _write_workflow(tmp_path, {"format": "unknown", "events": []})
     runner = PipelineRunner.__new__(PipelineRunner)
 
-    with pytest.raises(ValueError, match="unsupported workflow version"):
+    with pytest.raises(ValueError, match="unsupported workflow format"):
         runner.run(path)
 
 
@@ -26,11 +26,11 @@ def test_llm_locator_is_not_advertised_as_a_supported_method():
         create_locator("llm")
 
 
-def test_v5_is_validated_before_replay_setup(tmp_path):
+def test_timeline_is_validated_before_replay_setup(tmp_path):
     path = _write_workflow(
         tmp_path,
         {
-            "version": "5.0",
+            "format": "timeline",
             "events": [
                 {
                     "index": 1,

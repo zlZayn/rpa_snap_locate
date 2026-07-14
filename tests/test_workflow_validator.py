@@ -1,5 +1,5 @@
 import pytest
-from engine.workflow_validator import validate_v5_events, ValidationError
+from engine.workflow_validator import validate_timeline_events, ValidationError
 
 
 def _make_down(index=1, offset_ns=0, **kwargs) -> dict:
@@ -30,13 +30,13 @@ def _make_up(index=2, offset_ns=73400000, position_from_event=1, **kwargs) -> di
     return event
 
 
-class TestV5Validation:
+class TestValidateTimelineEvents:
     def test_valid_single_click(self):
         events = [
             _make_down(index=1, offset_ns=0),
             _make_up(index=2, offset_ns=73400000, position_from_event=1),
         ]
-        validate_v5_events(events)
+        validate_timeline_events(events)
 
     def test_valid_double_click(self):
         events = [
@@ -45,25 +45,25 @@ class TestV5Validation:
             _make_down(index=3, offset_ns=151600000),
             _make_up(index=4, offset_ns=226100000, position_from_event=3),
         ]
-        validate_v5_events(events)
+        validate_timeline_events(events)
 
     def test_empty_events_raises(self):
         with pytest.raises(ValidationError):
-            validate_v5_events([])
+            validate_timeline_events([])
 
     def test_missing_down_pair_raises(self):
         events = [
             _make_down(index=1, offset_ns=0),
         ]
         with pytest.raises(ValidationError, match="without matching mouse_up"):
-            validate_v5_events(events)
+            validate_timeline_events(events)
 
     def test_orphan_up_raises(self):
         events = [
             _make_up(index=2, offset_ns=73400000, position_from_event=99),
         ]
         with pytest.raises(ValidationError, match="non-existent mouse_down"):
-            validate_v5_events(events)
+            validate_timeline_events(events)
 
     def test_duplicate_index_raises(self):
         events = [
@@ -71,7 +71,7 @@ class TestV5Validation:
             _make_up(index=1, offset_ns=73400000, position_from_event=1),
         ]
         with pytest.raises(ValidationError, match="duplicate event index"):
-            validate_v5_events(events)
+            validate_timeline_events(events)
 
     def test_unsorted_offset_raises(self):
         events = [
@@ -79,14 +79,14 @@ class TestV5Validation:
             _make_up(index=2, offset_ns=50, position_from_event=1),
         ]
         with pytest.raises(ValidationError, match="not sorted"):
-            validate_v5_events(events)
+            validate_timeline_events(events)
 
     def test_negative_offset_raises(self):
         events = [
             _make_down(index=1, offset_ns=-1),
         ]
         with pytest.raises(ValidationError):
-            validate_v5_events(events)
+            validate_timeline_events(events)
 
     def test_up_with_position_info_raises(self):
         events = [
@@ -101,7 +101,7 @@ class TestV5Validation:
             },
         ]
         with pytest.raises(ValidationError, match="norm_x"):
-            validate_v5_events(events)
+            validate_timeline_events(events)
 
     def test_down_with_position_from_event_raises(self):
         events = [
@@ -119,14 +119,14 @@ class TestV5Validation:
             },
         ]
         with pytest.raises(ValidationError, match="position_from_event"):
-            validate_v5_events(events)
+            validate_timeline_events(events)
 
     def test_missing_method_on_down_raises(self):
         events = [
             {"index": 1, "type": "mouse_down", "button": "left", "offset_ns": 0},
         ]
         with pytest.raises(ValidationError, match="method"):
-            validate_v5_events(events)
+            validate_timeline_events(events)
 
     def test_missing_position_from_event_on_up_raises(self):
         events = [
@@ -134,21 +134,21 @@ class TestV5Validation:
             {"index": 2, "type": "mouse_up", "button": "left", "offset_ns": 73400000},
         ]
         with pytest.raises(ValidationError, match="position_from_event"):
-            validate_v5_events(events)
+            validate_timeline_events(events)
 
     def test_invalid_type_raises(self):
         events = [
             {"index": 1, "type": "hover", "button": "left", "offset_ns": 0},
         ]
         with pytest.raises(ValidationError, match="invalid type"):
-            validate_v5_events(events)
+            validate_timeline_events(events)
 
     def test_wrong_button_raises(self):
         events = [
             _make_down(index=1, offset_ns=0, button="extra"),
         ]
         with pytest.raises(ValidationError, match="invalid button"):
-            validate_v5_events(events)
+            validate_timeline_events(events)
 
     def test_up_button_must_match_down(self):
         events = [
@@ -161,7 +161,7 @@ class TestV5Validation:
             ),
         ]
         with pytest.raises(ValidationError, match="does not match"):
-            validate_v5_events(events)
+            validate_timeline_events(events)
 
     def test_down_cannot_have_two_ups(self):
         events = [
@@ -170,7 +170,7 @@ class TestV5Validation:
             _make_up(index=3, offset_ns=20, position_from_event=1),
         ]
         with pytest.raises(ValidationError):
-            validate_v5_events(events)
+            validate_timeline_events(events)
 
     def test_same_button_cannot_be_pressed_twice_without_release(self):
         events = [
@@ -178,11 +178,11 @@ class TestV5Validation:
             _make_down(index=2, offset_ns=10),
         ]
         with pytest.raises(ValidationError, match="pressed again"):
-            validate_v5_events(events)
+            validate_timeline_events(events)
 
     def test_first_event_may_include_wait_since_recording_started(self):
         events = [
             _make_down(index=1, offset_ns=100),
             _make_up(index=2, offset_ns=200, position_from_event=1),
         ]
-        validate_v5_events(events)
+        validate_timeline_events(events)

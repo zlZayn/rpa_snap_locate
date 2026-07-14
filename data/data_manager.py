@@ -1,7 +1,7 @@
 import json
 import os
 from datetime import datetime, timezone
-from engine.workflow_validator import validate_v5_events
+from engine.workflow_validator import validate_timeline_events
 from config.config_manager import ConfigManager
 
 
@@ -25,7 +25,7 @@ class DataManager:
             dir_name = f"{ts}-{len(steps)}steps"
         path = os.path.join(self._workflows_dir, f"{dir_name}.json")
         workflow = {
-            "version": "4.0",
+            "format": "legacy",
             "created_at": datetime.now().isoformat(),
             "steps": steps,
         }
@@ -33,13 +33,13 @@ class DataManager:
             json.dump(workflow, f, indent=2, ensure_ascii=False)
         return path
 
-    def save_workflow_v5(
+    def save_workflow_timeline(
         self,
         events: list[dict],
         ts: str,
         name: str = "",
     ) -> str:
-        validate_v5_events(events)
+        validate_timeline_events(events)
 
         if name:
             dir_name = f"{name}-{ts}-{len(events)}events"
@@ -47,7 +47,7 @@ class DataManager:
             dir_name = f"{ts}-{len(events)}events"
         path = os.path.join(self._workflows_dir, f"{dir_name}.json")
         workflow: dict = {
-            "version": "5.0",
+            "format": "timeline",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "timeline": {
                 "clock": "monotonic",
@@ -63,7 +63,7 @@ class DataManager:
     def load_workflow(self, path: str) -> dict:
         with open(path, "r", encoding="utf-8") as f:
             workflow = json.load(f)
-        version = workflow.get("version", "4.0")
-        if version not in ("4.0", "5.0"):
-            raise ValueError(f"unsupported workflow version: {version}")
+        fmt = workflow.get("format", "")
+        if fmt not in ("timeline", "legacy"):
+            raise ValueError(f"unsupported workflow format: {fmt}")
         return workflow

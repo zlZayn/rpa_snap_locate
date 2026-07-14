@@ -13,7 +13,7 @@ def dm(tmp_path):
     return dm
 
 
-class TestSaveWorkflowV5:
+class TestSaveWorkflowTimeline:
     def test_save_and_load_back(self, dm):
         events = [
             {
@@ -35,41 +35,27 @@ class TestSaveWorkflowV5:
                 "position_from_event": 1,
             },
         ]
-        path = dm.save_workflow_v5(events, "20260711_150000_000000", "test")
+        path = dm.save_workflow_timeline(events, "20260711_150000_000000", "test")
         assert "test-" in path
         assert "-2events.json" in path
 
         loaded = dm.load_workflow(path)
-        assert loaded["version"] == "5.0"
+        assert loaded["format"] == "timeline"
         assert loaded["timeline"]["clock"] == "monotonic"
         assert loaded["events"] == events
 
     def test_invalid_events_raises(self, dm):
         with pytest.raises(ValueError):
-            dm.save_workflow_v5(
+            dm.save_workflow_timeline(
                 [{"index": 1, "type": "mouse_down", "button": "left", "offset_ns": 0}],
                 "ts",
             )
 
-    def test_v4_workflow_loadable(self, dm):
-        path = os.path.join(dm._workflows_dir, "v4-test.json")
-        workflow = {
-            "version": "4.0",
-            "created_at": "2026-07-11T12:00:00",
-            "steps": [{"index": 1, "action": "click"}],
-        }
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(workflow, f)
-
-        loaded = dm.load_workflow(path)
-        assert loaded["version"] == "4.0"
-        assert len(loaded["steps"]) == 1
-
-    def test_unsupported_version_raises(self, dm):
+    def test_unsupported_format_raises(self, dm):
         path = os.path.join(dm._workflows_dir, "bad.json")
-        workflow = {"version": "3.0", "steps": []}
+        workflow = {"format": "unknown", "steps": []}
         with open(path, "w", encoding="utf-8") as f:
             json.dump(workflow, f)
 
-        with pytest.raises(ValueError, match="unsupported workflow version"):
+        with pytest.raises(ValueError, match="unsupported workflow format"):
             dm.load_workflow(path)

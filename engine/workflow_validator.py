@@ -10,7 +10,7 @@ class ValidationError(ValueError):
     pass
 
 
-def validate_v5_events(events: list[dict]) -> None:
+def validate_timeline_events(events: list[dict]) -> None:
     if not isinstance(events, list):
         raise ValidationError("events must be a list")
     if not events:
@@ -118,7 +118,7 @@ def validate_v5_events(events: list[dict]) -> None:
 
     screenshot_count = sum(1 for e in events if e["type"] == "screenshot")
     logger.info(
-        "v5 validation passed: %d events (%d down, %d up, %d screenshot)",
+        "timeline validation passed: %d events (%d down, %d up, %d screenshot)",
         len(events),
         len(down_events),
         len(up_indices),

@@ -9,7 +9,7 @@ from core.action_executor import ActionExecutor
 from core.perception_provider import PerceptionProvider
 from config.config_manager import ConfigManager
 from engine.timeline_scheduler import TimelineScheduler
-from engine.workflow_validator import validate_v5_events
+from engine.workflow_validator import validate_timeline_events
 
 logger = logging.getLogger("rpa_snap_locate.pipeline_runner")
 
@@ -29,15 +29,22 @@ class PipelineRunner:
         with open(workflow_path, "r", encoding="utf-8") as f:
             workflow = json.load(f)
 
-        version = workflow.get("version", "4.0")
-        if version == "5.0":
-            self._run_v5(workflow, workflow_path)
-        elif version == "4.0":
-            self._run_v4(workflow, workflow_path)
+        fmt = self._detect_format(workflow)
+        if fmt == "timeline":
+            self._run_timeline(workflow, workflow_path)
+        elif fmt == "legacy":
+            self._run_legacy(workflow, workflow_path)
         else:
-            raise ValueError(f"unsupported workflow version: {version}")
+            raise ValueError(f"unsupported workflow format: {fmt}")
 
-    def _run_v4(self, workflow: dict, workflow_path: str) -> None:
+    @staticmethod
+    def _detect_format(workflow: dict) -> str:
+        fmt = workflow.get("format", "")
+        if fmt not in ("timeline", "legacy"):
+            raise ValueError(f"unsupported workflow format: {fmt}")
+        return fmt
+
+    def _run_legacy(self, workflow: dict, workflow_path: str) -> None:
         steps = workflow.get("steps", [])
         if not steps:
             logger.warning("workflow is empty, nothing to run")
@@ -92,12 +99,12 @@ class PipelineRunner:
             run_dir,
         )
 
-    def _run_v5(self, workflow: dict, workflow_path: str) -> None:
+    def _run_timeline(self, workflow: dict, workflow_path: str) -> None:
         events = workflow.get("events", [])
         if not events:
             logger.warning("workflow has no events, nothing to run")
             return
-        validate_v5_events(events)
+        validate_timeline_events(events)
 
         if self._start_delay > 0:
             logger.info("starting timeline in %.1f seconds ...", self._start_delay)

@@ -186,7 +186,7 @@ class RecorderEngine:
         events_to_save = list(self._events)
         saved_count = len(events_to_save)
         try:
-            path = self._data_manager.save_workflow_v5(
+            path = self._data_manager.save_workflow_timeline(
                 events_to_save,
                 self._ts,
                 name,

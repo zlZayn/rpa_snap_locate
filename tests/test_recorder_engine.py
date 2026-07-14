@@ -156,16 +156,16 @@ class TimelineRecorderEngineTests(unittest.TestCase):
     def test_empty_save_in_timeline_mode(self) -> None:
         message = self.engine.save()
         self.assertEqual(message, "no events to save")
-        self.engine._data_manager.save_workflow_v5.assert_not_called()
+        self.engine._data_manager.save_workflow_timeline.assert_not_called()
 
-    def test_save_with_events_calls_v5(self) -> None:
+    def test_save_with_events_in_timeline_mode(self) -> None:
         events = [{"index": 1, "type": "mouse_down"}]
         self.engine._events.extend(events)
-        self.engine._data_manager.save_workflow_v5.return_value = "v5-workflow.json"
+        self.engine._data_manager.save_workflow_timeline.return_value = "timeline-workflow.json"
         self.engine._data_manager.new_ts.return_value = "ts-2"
 
         message = self.engine.save()
-        self.engine._data_manager.save_workflow_v5.assert_called_once_with(
+        self.engine._data_manager.save_workflow_timeline.assert_called_once_with(
             events,
             "ts-1",
             "",
@@ -194,7 +194,7 @@ class TimelineRecorderEngineTests(unittest.TestCase):
                 "position_from_event": 1,
             },
         ]
-        self.engine._data_manager.save_workflow_v5.return_value = "v5-workflow.json"
+        self.engine._data_manager.save_workflow_timeline.return_value = "timeline-workflow.json"
 
         self.engine.save()
         self.engine._input_recorder.stop_recording.assert_called_once()
@@ -260,7 +260,7 @@ class TimelineRecorderEngineTests(unittest.TestCase):
 
     def test_save_validation_failure_reported(self) -> None:
         self.engine._events = [{"invalid": True}]
-        self.engine._data_manager.save_workflow_v5.side_effect = ValueError(
+        self.engine._data_manager.save_workflow_timeline.side_effect = ValueError(
             "missing required field 'index'"
         )
         message = self.engine.save()

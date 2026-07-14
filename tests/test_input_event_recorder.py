@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 import mouse
 
 from engine.input_event_recorder import InputEventRecorder
-from engine.workflow_validator import validate_v5_events
+from engine.workflow_validator import validate_timeline_events
 
 
 def _make_recorder():
@@ -49,7 +49,7 @@ def test_first_event_keeps_wait_since_f2_and_uses_cursor_position_at_start():
     assert events[0]["norm_x"] == 0.3
     assert events[0]["norm_y"] == 0.4
     assert events[1]["offset_ns"] == 575
-    validate_v5_events(events)
+    validate_timeline_events(events)
 
 
 def test_interleaved_buttons_pair_with_their_own_down_event():
@@ -67,7 +67,7 @@ def test_interleaved_buttons_pair_with_their_own_down_event():
 
     assert events[2]["position_from_event"] == 1
     assert events[3]["position_from_event"] == 2
-    validate_v5_events(events)
+    validate_timeline_events(events)
 
 
 def test_windows_double_event_is_preserved_as_second_down():
@@ -91,6 +91,6 @@ def test_windows_double_event_is_preserved_as_second_down():
     ]
     assert events[1]["position_from_event"] == 1
     assert events[3]["position_from_event"] == 3
-    validate_v5_events(events)
+    validate_timeline_events(events)
 
 
