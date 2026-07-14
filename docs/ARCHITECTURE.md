@@ -30,7 +30,7 @@ flowchart LR
 
     M --> PR["PipelineRunner"]
     W --> PR
-    PR --> V["validate_v5_events()"]
+    PR --> V["validate_timeline_events()"]
     PR --> L["Locator"]
     PR --> S["TimelineScheduler"]
     S --> A["ActionExecutor"]
@@ -42,7 +42,7 @@ flowchart LR
 
 1. `RecorderEngine` 管理用户看到的录制状态，但不直接监听物理鼠标。
 2. `InputEventRecorder` 负责尽快接收原始鼠标事件并给它们加时间。
-3. `DataManager` 在写入时间线工作流前调用 `validate_v5_events()`，不允许把不完整事件保存成有效文件。
+3. `DataManager` 在写入时间线工作流前调用 `validate_timeline_events()`，不允许把不完整事件保存成有效文件。
 4. `PipelineRunner` 负责一次回放的完整生命周期，并把具体时间调度交给 `TimelineScheduler`。
 5. `TimelineScheduler` 决定何时发送事件，`ActionExecutor` 只负责 Windows 窗口准备、鼠标移动和实际注入。
 
@@ -61,7 +61,7 @@ engine/ → data/      工作流持久化
 data/   → engine/    仅 DataManager 调用 workflow_validator
 ```
 
-大部分依赖由上向下。当前有一个明确的交叉点：`data/data_manager.py` 导入 `engine/workflow_validator.py`，以保证时间线事件在落盘前一定经过校验。若以后严格拆分层次，可把 schema/validator 移到独立的 domain 包；现阶段它是持久化边界的保护措施。
+大部分依赖由上向下。
 
 ## 4. 目录与职责
 
@@ -82,6 +82,7 @@ rpa_snap_locate/
 ├── core/
 │   ├── perception_provider.py      截屏、鼠标、活动窗口、DPI 与分辨率
 │   ├── action_executor.py          Windows 前台窗口、鼠标移动、SendInput
+│   ├── change_validator.py         界面变化检测（预留，尚未实现）
 │   ├── locator_protocol.py         定位接口和工厂
 │   └── locators/
 │       └── fixed_locator.py        归一化坐标转当前物理坐标
@@ -89,7 +90,7 @@ rpa_snap_locate/
 │   ├── data_manager.py             两种工作流 JSON 的保存与读取
 │   ├── workflows/                  已保存工作流
 │   └── recordings/                 每次回放的产物（快照、截图、报告）
-├── utils/                          DPI、日志、哈希等工具
+├── utils/                          DPI、日志；哈希与图像熵检测（预留，尚未实现）
 ├── tests/                          状态、事件、校验、调度和执行测试
 └── docs/                           架构、方案和串联脚本文档
 ```
@@ -187,11 +188,11 @@ mouse_down #1 → mouse_up #1 → mouse_down #2 → mouse_up #2
 
 ## 8. 时间线工作流保存的内容
 
-文件内部使用 `version: "5.0"` 作为解析标记，让程序知道应读取 `events` 而不是旧文件的 `steps`。这个数字只用于区分文件结构，不代表一个需要用户理解的功能版本。
+文件内部使用 `format: "timeline"` 字段区分格式类型，让程序知道应读取 `events` 而不是旧文件的 `steps`。
 
 ```json
 {
-  "version": "5.0",
+  "format": "timeline",
   "created_at": "2026-07-11T07:00:00+00:00",
   "timeline": {
     "clock": "monotonic",
@@ -227,7 +228,7 @@ mouse_down #1 → mouse_up #1 → mouse_down #2 → mouse_up #2
 }
 ```
 
-`validate_v5_events()` 在保存和回放前执行，检查：
+`validate_timeline_events()` 在保存和回放前执行，检查：
 
 - events 是非空列表；
 - index 是正整数且不重复；
@@ -296,15 +297,15 @@ sequenceDiagram
 
 详细顺序：
 
-1. `PipelineRunner.run()` 读取 JSON 并按 `version` 分发；未知版本直接报错。
+1. `PipelineRunner.run()` 读取 JSON 并按 `format` 分发；未知格式直接报错。
 2. 时间线文件没有事件时直接返回；非空事件先检查结构、顺序和按键配对。
- 3. 可选等待 `replay.start_delay_seconds`，用于用户切换窗口。
- 4. 创建本次 run 目录并拍摄 `burst_before.png`。
- 5. 构造 `ActionExecutor` 和 `TimelineScheduler`。
- 6. Scheduler 在时间线开始前准备第一条 down 的坐标、窗口和鼠标位置，然后建立 `replay_origin`。
- 7. 对每个 mouse_down：准备前先截屏并标红叉保存为 `event_N_before.png`；然后定位、移动鼠标。
- 8. 到达 deadline 后发送 down，继续等待下一个 deadline。
- 9. 发送 mouse_up 后等待 200ms 再截屏并标红叉保存为 `event_N_after.png`（N 为 mouse_up 事件自身索引，与 before 不共用同个数字）。
+3. 可选等待 `replay.start_delay_seconds`，用于用户切换窗口。
+4. 创建本次 run 目录并拍摄 `burst_before.png`。
+5. 构造 `ActionExecutor` 和 `TimelineScheduler`。
+6. Scheduler 在时间线开始前准备第一条 down 的坐标、窗口和鼠标位置，然后建立 `replay_origin`。
+7. 对每个 mouse_down：准备前先截屏并标红叉保存为 `event_N_before.png`；然后定位、移动鼠标。
+8. 到达 deadline 后发送 down，继续等待下一个 deadline。
+9. 发送 mouse_up 后等待 200ms 再截屏并标红叉保存为 `event_N_after.png`（N 为 mouse_up 事件自身索引，与 before 不共用同个数字）。
 10. `screenshot` 事件到达 deadline 时对 `region` 截取区域图保存为 `event_N.png`。
 11. 全部事件完成后拍摄 `burst_after.png`，写入 `replay_report.json`。
 
@@ -333,17 +334,9 @@ Scheduler 维护当前已按下按钮集合。如果回放在 down 与 up 之间
 `ActionExecutor` 把“准备”和“输入”拆开：
 
 ```text
-prepare_target(x, y)
-  → WindowFromPoint
-  → GetAncestor(GA_ROOT)
-  → 必要时 SetForegroundWindow
-
-move_to(x, y)
-  → SetCursorPos
-  → GetCursorPos 校验
-
-mouse_down/up(button)
-  → SendInput(对应 left/right/middle flag)
+prepare_target(x, y): 定位目标窗口顶层句柄，必要时设为前台
+move_to(x, y):        移动鼠标到指定坐标
+mouse_down/up(button): 通过 Windows SendInput 注入
 ```
 
 同一顶层窗口连续操作时，`_last_target_hwnd` 避免重复请求前台。未知按钮会显式报错，不会降级成左键。
@@ -402,7 +395,7 @@ data/
 | 主要数据字段 | `events` | `steps` |
 | 回放快照 | 整段前后各一张，另每个 mouse_down 前截一张、mouse_up 后 200ms 截一张 | 每个步骤前后各一张 |
 | 录制设置 | `recorder.mode: timeline` | `recorder.mode: legacy` |
-| 文件内部标记 | `version: "5.0"` | `version: "4.0"` 或没有 version |
+| 文件内部标记 | `format: "timeline"` | `format: "legacy"` |
 
 ### 14.1 录制逐步点击工作流
 
@@ -411,9 +404,9 @@ data/
 - F2 直接创建一个 fixed click step；
 - F3 两次框选，再用 F2 指定框内目标；
 - `StepBuilder` 递增 step index；
-- `DataManager.save_workflow()` 保存 `steps`，内部标记为 `version: 4.0`。
+- `DataManager.save_workflow()` 保存 `steps`，内部标记为 `format: "legacy"`。
 
-`PipelineRunner` 看到内部标记为 `4.0`，或文件没有 version 标记时，会走逐步点击回放并读取 `steps`。这种结构不保存按下、抬起和间隔，因此程序只按步骤顺序点击，不推测点击持续时间或双击速度。
+`PipelineRunner` 看到 `format: "legacy"`，会走逐步点击回放并读取 `steps`。这种结构不保存按下、抬起和间隔，因此程序只按步骤顺序点击，不推测点击持续时间或双击速度。
 
 ## 15. 线程与并发边界
 
@@ -448,7 +441,7 @@ data/
 ## 17. 错误与完整性策略
 
 - 工作流不存在或为空：记录警告并返回。
-- 文件内部版本标记未知：抛出 `ValueError`。
+- 文件内部格式标记未知：抛出 `ValueError`。
 - 时间线结构、顺序或按键配对不合法：抛出 `ValidationError`，保存时转成用户可读失败信息。
 - 原始事件队列溢出或出现不支持按钮：录制标记不完整并拒绝保存。
 - 定位方法未知：locator factory 抛出 `ValueError`。
@@ -459,17 +452,7 @@ data/
 
 ## 18. 测试结构
 
-| 测试文件 | 覆盖重点 |
-| :--- | :--- |
-| `test_input_event_recorder.py` | 首事件等待、首击坐标、按钮交错、双击还原 |
-| `test_recorder_engine.py` | 两种录制状态、F2 停止保留、保存与清空、框选取消、清空取消 |
-| `test_workflow_validator.py` | 排序、字段、按钮一致、一对一配对、未闭合输入 |
-| `test_timeline_scheduler.py` | 准备耗时计入迟到、异常释放按钮 |
-| `test_action_executor.py` | SendInput、UIPI 错误、左右中按钮标志、窗口复用 |
-| `test_pipeline_runner.py` | 未知版本拒绝、回放前校验 |
-| `test_data_manager.py` | 两种工作流保存读取与内部版本限制 |
-
-单元测试使用 fake clock 和 mock，不会真实移动鼠标。真实 Windows 双击识别、不同权限窗口和高负载下的时间误差仍需手工或专用桌面集成测试。
+核心模块均有单元测试覆盖，测试要点详见 `docs/design/evolution_notes.md`。单元测试使用 fake clock 和 mock，不会真实移动鼠标。真实 Windows 双击识别、不同权限窗口和高负载下的时间误差仍需手工或专用桌面集成测试。
 
 ## 19. 已知限制与扩展点
 
