@@ -19,6 +19,7 @@ if (-not (Test-Path -LiteralPath $workflowPath -PathType Leaf)) {
 }
 
 Write-Host "[series] replaying: $workflowPath"
+Set-Location -LiteralPath $ProjectRoot
 uv run python (Join-Path $ProjectRoot "main.py") run $workflowPath
 if ($LASTEXITCODE -ne 0) {
     throw "RPA workflow failed with exit code ${LASTEXITCODE}: $workflowPath"

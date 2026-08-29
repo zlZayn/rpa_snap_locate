@@ -22,11 +22,13 @@
 uv sync
 ```
 
-启动录制：
+在**项目根目录**下启动录制：
 
 ```bash
 uv run python main.py
 ```
+
+> **必须在项目根目录执行。** `config/system.yaml` 中的路径（`data/recordings/`、`data/workflows/`、`logs/`）均为相对路径。若从其他目录启动，录制文件和日志会写到该目录下，而非项目内。Series 脚本（`run-rpa.ps1`、`tabbit-taobao-replay.ps1`）已自动处理此问题。
 
 只需要记住这一条主流程：
 

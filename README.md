@@ -22,11 +22,13 @@ Install the requirements:
 uv sync
 ```
 
-Start recording mode:
+Start recording mode from the **project root**:
 
 ```bash
 uv run python main.py
 ```
+
+> **Working directory matters.** All paths in `config/system.yaml` (`data/recordings/`, `data/workflows/`, `logs/`) are relative. If you run the tool from a different directory, recordings and logs will be written there instead of inside the project. The Series scripts (`run-rpa.ps1`, `tabbit-taobao-replay.ps1`) handle this automatically.
 
 There is one main flow to remember:
 
