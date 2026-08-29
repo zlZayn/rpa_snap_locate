@@ -1,6 +1,7 @@
 # Python-generated files
 __pycache__/
 .pytest_cache/
+.pytest_tmp/
 *.py[oc]
 build/
 dist/
@@ -23,3 +24,6 @@ series/mine/
 
 # OpenCode internal state
 .omo/
+
+# CodeGraph local index
+.codegraph/

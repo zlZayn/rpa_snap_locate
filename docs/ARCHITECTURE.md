@@ -92,7 +92,7 @@ rpa_snap_locate/
 │   └── recordings/                 每次回放的产物（快照、截图、报告）
 ├── utils/                          DPI、日志；哈希与图像熵检测（预留，尚未实现）
 ├── tests/                          状态、事件、校验、调度和执行测试
-└── docs/                           架构、方案和串联脚本文档
+└── docs/                           架构说明与 Command Series 规范
 ```
 
 ## 5. 入口与运行模式
@@ -428,7 +428,7 @@ data/
 | :--- | :--- | :--- |
 | `screen.logical_width/height` | 1920×1080 | fixed 坐标归一化和还原 |
 | `screen.dpi_scale` | auto | auto 时读取系统缩放，否则使用指定值 |
-| `paths.workflows_dir` | `data/workflows/` | 工作流保存与 F5 查找 |
+| `paths.workflows_dir` | `data/workflows/` | 工作流保存与 F5 查找（**相对路径，须从项目根目录执行**） |
 | `paths.recordings_dir` | `data/recordings/` | 回放产物输出（快照、截图、报告） |
 | `paths.logs_dir` | `logs/` | 日志输出 |
 | `recorder.mode` | timeline | 选择时间线录制或逐步点击录制 |
@@ -452,7 +452,7 @@ data/
 
 ## 18. 测试结构
 
-核心模块均有单元测试覆盖，测试要点详见 `docs/design/evolution_notes.md`。单元测试使用 fake clock 和 mock，不会真实移动鼠标。真实 Windows 双击识别、不同权限窗口和高负载下的时间误差仍需手工或专用桌面集成测试。
+核心模块均有单元测试覆盖，测试对应关系详见 [tests/README.md](../tests/README.md)。单元测试使用 fake clock 和 mock，不会真实移动鼠标。真实 Windows 双击识别、不同权限窗口和高负载下的时间误差仍需手工或专用桌面集成测试。
 
 ## 19. 已知限制与扩展点
 

@@ -1,4 +1,4 @@
-# Command Series 组装规范
+﻿# Command Series 组装规范
 
 本文档主要供 Agent 设计和生成 Command Series，也可供人工编写时参考。
 
@@ -63,7 +63,8 @@ Agent 必须按以下顺序工作：
 | [`send-keys.ps1`](../series/atoms/send-keys.ps1) | 输入文字或发送快捷键 | 目标参数加 `-Text` 或 `-Keys` |
 | [`paste.ps1`](../series/atoms/paste.ps1) | 剪贴板粘贴文本（支持中文等 Unicode） | `-Text`、`-WindowTitle` / `-CurrentWindow`、`-ShiftControlV` |
 | [`run-command.ps1`](../series/atoms/run-command.ps1) | 同步执行普通 CLI | `-Name`、`-FilePath`、`-ArgumentList` |
-| [`wait-stable.ps1`](../series/atoms/wait-stable.ps1) | 等待画面停止变化（纯内存截屏对比） | `-IntervalSecond`、`-Threshold`、`-TimeoutSecond` |
+| [`wait-stable.ps1`](../series/atoms/wait-stable.ps1) | 等待稳定（截屏对比或目录文件对比） | `-Mode`、`-PollSeconds`、`-SimilarityThreshold`、`-TimeoutSeconds`、`-StableCount`、`-Path`、`-BeforeSnapshot` |
+| [`eval-browser.ps1`](../series/atoms/eval-browser.ps1) | 通过 Chrome DevTools Protocol 注入 JavaScript | `-Script`、`-Port`、`-TimeoutSeconds` |
 
 ### 4.1 启动软件
 
@@ -206,26 +207,89 @@ Agent 必须按以下顺序工作：
     -Text "你好"
 ```
 
-### 4.7 等待画面稳定
+### 4.7 等待稳定
+
+统一使用 `wait-stable.ps1`，通过 `-Mode` 切换检测方式。需要连续 `-StableCount` 次轮询都稳定才算成功，中途有任何变化就重置计数。
+
+#### pixel 模式（截屏对比）
 
 等待屏幕内容不再变化（如 AI 回复流式输出结束），纯内存截屏对比，无磁盘写入：
 
 ```powershell
 if (-not (& (Join-Path $Atoms "wait-stable.ps1") `
-    -IntervalSecond 2 -Threshold 0.99 -TimeoutSecond 30)) {
+    -Mode pixel -PollSeconds 1 -SimilarityThreshold 0.99 -TimeoutSeconds 30 -StableCount 3)) {
     throw "画面未在 30 秒内稳定，终止工作流"
 }
 ```
 
-参数：
+#### file 模式（目录文件对比）
+
+等待指定目录中的文件不再变化（如浏览器下载完成）。分两阶段：先等新文件出现（下载开始），再等文件列表稳定。
+
+> **必须指定 `-Path` 和 `-BeforeSnapshot`**，否则 file 模式会抛出异常。
+
+```powershell
+$before = & (Join-Path $Atoms "wait-stable.ps1") `
+    -Mode file -Path "E:\新下载" -BeforeSnapshot @() -PollSeconds 1 -TimeoutSeconds 60 -StableCount 3
+```
+
+实际使用中，先用 `Get-ChildItem` 快照目录，操作完成后再调用 `wait-stable.ps1` 等待稳定：
+
+```powershell
+# 操作前快照
+$beforeSnap = Get-ChildItem "E:\新下载" -File |
+    ForEach-Object { "$($_.Name)|$($_.Length)|$($_.LastWriteTimeUtc.Ticks)" } | Sort-Object
+
+# 等待稳定
+& (Join-Path $Atoms "wait-stable.ps1") `
+    -Mode file -Path "E:\新下载" -BeforeSnapshot $beforeSnap `
+    -PollSeconds 1 -TimeoutSeconds 60 -StableCount 3
+```
+
+#### 参数
 
 | 参数 | 默认值 | 说明 |
 | :--- | :--- | :--- |
-| `-IntervalSecond` | 1 | 两次截屏对比的间隔（秒） |
-| `-Threshold` | 0.99 | 稳定判定阈值（像素匹配比例），0.99=允许 1% 像素变化 |
-| `-TimeoutSecond` | 30 | 超时秒数，超时返回 `$false` |
+| `-Mode` | pixel | `pixel` 截屏对比，`file` 目录文件对比 |
+| `-PollSeconds` | 1 | 每次轮询间隔（秒） |
+| `-SimilarityThreshold` | 0.99 | pixel 模式：像素相似度阈值，0.99 = 99% 匹配才算稳定 |
+| `-TimeoutSeconds` | 30 | 最大等待总时长（秒），超时返回 `$false` |
+| `-StableCount` | 3 | 连续多少次轮询都稳定才算成功 |
+| `-Path` | | file 模式：监控的目录路径 |
+| `-BeforeSnapshot` | @() | file 模式：操作前的目录快照 |
 
-画面稳定后返回 `$true`，超时返回 `$false`。
+稳定后返回 `$true`，超时返回 `$false`。
+
+### 4.8 检测方式选择
+
+通过 `wait-stable.ps1` 的 `-Mode` 参数选择检测方式：
+
+| 模式 | `-Mode` | 检测方式 | 适用场景 |
+| :--- | :--- | :--- | :--- |
+| 像素对比 | pixel | 截图像素对比 | 页面视觉变化（AI 回复、加载动画等） |
+| 文件对比 | file | 目录文件列表对比（名称+大小+修改时间） | 文件下载、导出等磁盘操作 |
+
+`pixel` 模式通过截图像素对比检测画面变化。`file` 模式先快照目录，再轮询对比文件列表直到稳定，同时检测临时文件（`.crdownload`、`.part`、`.tmp`、`.download`），有临时文件时视为下载未完成。`file` 模式必须指定 `-Path` 和 `-BeforeSnapshot`。
+
+文件模式还会检测新文件出现（下载开始），只有在检测到新文件后才开始稳定计数，避免未下载就误判稳定。
+
+### 4.9 浏览器脚本注入
+
+通过 Chrome DevTools Protocol 向当前页面注入 JavaScript：
+
+```powershell
+& (Join-Path $Atoms "eval-browser.ps1") `
+    -Script "document.title = 'Hello from RPA'" `
+    -Port 9222
+```
+
+Chrome 必须以 `--remote-debugging-port=9222` 启动。原子自动选择第一个 http/https 页面标签页，通过 WebSocket 执行脚本并返回结果。
+
+| 参数 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `-Script` | （必填） | 要执行的 JavaScript 代码 |
+| `-Port` | 9222 | Chrome DevTools Protocol 端口 |
+| `-TimeoutSeconds` | 30 | 执行超时时间 |
 
 ## 5. 组装 Series
 
@@ -251,6 +315,12 @@ pwsh -NoProfile -File series/mine/<series-name>.ps1
 ```
 
 具体 Series 可以删除、重复或重新排列原子调用，但不能复制原子的内部实现。
+
+### 5.1 常见问题
+
+- **`No module named 'yaml'` 或数据写到了错误的位置**：`uv run` 和 `main.py` 均需在项目根目录执行。`config/system.yaml` 中的路径（`data/`、`logs/`）为相对路径，从其他目录启动会导致文件散落。`run-rpa.ps1` 和 `tabbit-taobao-replay.ps1` 已通过 `Set-Location` / `Push-Location` 自动处理，无需额外操作。
+- **语法解析报错（含中文时）**：必须用 `pwsh`（7+），不能用 `powershell`（5.1）。
+- **profile 干扰**：始终加 `-NoProfile`。
 
 ## 6. 自定义原子规范
 
