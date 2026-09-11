@@ -22,3 +22,8 @@
 ## 活跃坑
 - Windows UIPI：回放进程与目标软件必须同权限级别，否则 SendInput 被拒
 - 从非项目根目录执行会导致 data/ 和 logs/ 散落
+
+## 文档地图
+- 用户文档 → [README.md](README.md) · [README_zh.md](README_zh.md)
+- 架构设计 → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Series 串联规范 → [docs/COMMAND_SERIES.md](docs/COMMAND_SERIES.md)

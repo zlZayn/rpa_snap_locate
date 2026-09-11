@@ -131,3 +131,5 @@ Windows 下尽量直接启动软件的 `.exe` 文件。
 - [uv](https://docs.astral.sh/uv/)
 
 需要了解内部模块、录制状态、文件格式和回放时间控制时，请阅读[架构文档](docs/ARCHITECTURE.md)。
+
+开发者/维护者备忘（命令、验证快照、已知坑位）见 [AGENTS.md](AGENTS.md)。

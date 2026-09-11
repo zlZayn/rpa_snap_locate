@@ -131,3 +131,5 @@ This project does not record keyboard input or support dragging. When keyboard i
 - [uv](https://docs.astral.sh/uv/)
 
 For module relationships, recording states, file formats, and playback timing, read the [architecture guide](docs/ARCHITECTURE.md).
+
+Developer and maintainer notes (commands, verification snapshot, known pitfalls): see [AGENTS.md](AGENTS.md).
