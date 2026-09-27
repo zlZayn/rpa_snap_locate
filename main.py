@@ -34,7 +34,9 @@ def cmd_record():
             logger.info("  ESC         取消进行中的框选")
             logger.info("  F1          显示本帮助")
             logger.info("  F2          开始录制；再次按下停止并保留，可继续追加")
-            logger.info("  F3          框选截图范围：按两次 F3 标记矩形区域，回放后自动截图保存；不改变点击定位方式")
+            logger.info(
+                "  F3          框选截图范围：按两次 F3 标记矩形区域，回放后自动截图保存；不改变点击定位方式"
+            )
             logger.info("  F5          回放最近保存的文件")
         else:
             logger.info("主流程：鼠标移到目标 → F2 记一次点击 → Ctrl+S 保存 → F5 回放")
@@ -43,7 +45,9 @@ def cmd_record():
             logger.info("  ESC         取消进行中的框选")
             logger.info("  F1          显示本帮助")
             logger.info("  F2          在鼠标位置记录一次点击")
-            logger.info("  F3          框选范围：按两次 F3 标记矩形区域，随后按 F2 记录框内相对位置")
+            logger.info(
+                "  F3          框选范围：按两次 F3 标记矩形区域，随后按 F2 记录框内相对位置"
+            )
             logger.info("  F5          回放最近保存的文件")
         logger.info("-" * 54)
 

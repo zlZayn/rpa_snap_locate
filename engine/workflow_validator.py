@@ -44,9 +44,7 @@ def validate_timeline_events(events: list[dict]) -> None:
 
         if typ == "screenshot":
             if "region" not in event:
-                raise ValidationError(
-                    f"screenshot event {idx} must have a region"
-                )
+                raise ValidationError(f"screenshot event {idx} must have a region")
 
         elif typ == "mouse_down":
             if "position_from_event" in event:

@@ -170,15 +170,16 @@ class PipelineRunner:
             )
             if region_img:
                 region_img.save(
-                    os.path.join(
-                        screenshots_dir, f"event_{event['index']:04d}.png"
-                    ),
+                    os.path.join(screenshots_dir, f"event_{event['index']:04d}.png"),
                     "PNG",
                 )
 
         before_evidence = self._perception.capture_screen()
         report = scheduler.run(
-            events, prepare_down, mouse_down, mouse_up,
+            events,
+            prepare_down,
+            mouse_down,
+            mouse_up,
             screenshot_fn=on_screenshot,
             after_event_fn=after_event,
         )

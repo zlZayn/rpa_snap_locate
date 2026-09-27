@@ -92,5 +92,3 @@ def test_windows_double_event_is_preserved_as_second_down():
     assert events[1]["position_from_event"] == 1
     assert events[3]["position_from_event"] == 3
     validate_timeline_events(events)
-
-

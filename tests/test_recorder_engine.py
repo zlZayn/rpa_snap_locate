@@ -161,7 +161,9 @@ class TimelineRecorderEngineTests(unittest.TestCase):
     def test_save_with_events_in_timeline_mode(self) -> None:
         events = [{"index": 1, "type": "mouse_down"}]
         self.engine._events.extend(events)
-        self.engine._data_manager.save_workflow_timeline.return_value = "timeline-workflow.json"
+        self.engine._data_manager.save_workflow_timeline.return_value = (
+            "timeline-workflow.json"
+        )
         self.engine._data_manager.new_ts.return_value = "ts-2"
 
         message = self.engine.save()
@@ -194,7 +196,9 @@ class TimelineRecorderEngineTests(unittest.TestCase):
                 "position_from_event": 1,
             },
         ]
-        self.engine._data_manager.save_workflow_timeline.return_value = "timeline-workflow.json"
+        self.engine._data_manager.save_workflow_timeline.return_value = (
+            "timeline-workflow.json"
+        )
 
         self.engine.save()
         self.engine._input_recorder.stop_recording.assert_called_once()

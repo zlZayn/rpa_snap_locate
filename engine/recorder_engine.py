@@ -103,9 +103,7 @@ class RecorderEngine:
         }
         if self.state in recording_states:
             try:
-                self._append_timeline_events(
-                    self._input_recorder.stop_recording()
-                )
+                self._append_timeline_events(self._input_recorder.stop_recording())
             except (InputRecordingError, ValueError) as exc:
                 logger.debug("recording stopped with data loss: %s", exc)
                 self.state = RecorderState.IDLE
@@ -168,9 +166,7 @@ class RecorderEngine:
             RecorderState.RECORDING_WAITING_SECOND,
         }:
             try:
-                self._append_timeline_events(
-                    self._input_recorder.stop_recording()
-                )
+                self._append_timeline_events(self._input_recorder.stop_recording())
             except (InputRecordingError, ValueError) as exc:
                 self.state = RecorderState.IDLE
                 logger.debug("save failed because recording is incomplete: %s", exc)
@@ -371,10 +367,7 @@ class RecorderEngine:
         return f"recorded click step {step['index']}"
 
     def use_box_center(self) -> str:
-        if (
-            self.state != RecorderState.WAITING_TARGET
-            or self._box_region is None
-        ):
+        if self.state != RecorderState.WAITING_TARGET or self._box_region is None:
             return "not in box target state"
         region = self._box_region
         phys_x = region["left"] + region["width"] // 2

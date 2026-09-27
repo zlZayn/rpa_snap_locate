@@ -113,9 +113,7 @@ class TimelineScheduler:
                     logger.warning(
                         "released mouse button %s after interrupted timeline", button
                     )
-                    print(
-                        f"[rpa] 回放中断，已自动释放鼠标按键 {button}。"
-                    )
+                    print(f"[rpa] 回放中断，已自动释放鼠标按键 {button}。")
                 except Exception:
                     logger.exception(
                         "failed to release mouse button %s after interruption", button
