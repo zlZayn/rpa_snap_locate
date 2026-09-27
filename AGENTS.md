@@ -5,6 +5,7 @@
 - Command Series 规范 → [docs/COMMAND_SERIES.md](docs/COMMAND_SERIES.md)
 - 模块手册 → [engine/README.md](engine/README.md) · [core/README.md](core/README.md) · [config/README.md](config/README.md) · [data/README.md](data/README.md) · [series/README.md](series/README.md) · [utils/README.md](utils/README.md) · [tests/README.md](tests/README.md)
 - 决策记录 → [.agents/notes/](.agents/notes/)
+- 双件分离：AGENTS.md 只写规则，README.md 只写是什么/怎么改
 
 ## 常用命令
 - 安装依赖：`uv sync`
