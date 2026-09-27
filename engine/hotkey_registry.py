@@ -1,6 +1,7 @@
-import keyboard
 import logging
-from typing import Callable
+from collections.abc import Callable
+
+import keyboard
 
 logger = logging.getLogger("rpa_snap_locate.hotkey_registry")
 

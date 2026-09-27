@@ -1,7 +1,7 @@
 import logging
 import threading
 from enum import Enum
-from typing import Optional
+
 from config.config_manager import ConfigManager
 from core.perception_provider import PerceptionProvider
 from data.data_manager import DataManager
@@ -34,9 +34,9 @@ class RecorderEngine:
         self.state = RecorderState.IDLE
         self._steps: list[dict] = []
         self._events: list[dict] = []
-        self._box_point1: Optional[tuple[int, int]] = None
-        self._box_point2: Optional[tuple[int, int]] = None
-        self._box_region: Optional[dict] = None
+        self._box_point1: tuple[int, int] | None = None
+        self._box_point2: tuple[int, int] | None = None
+        self._box_region: dict | None = None
         self._cancel_event = threading.Event()
         self._ts = self._data_manager.new_ts()
         self._last_saved_path: str | None = None
@@ -315,7 +315,7 @@ class RecorderEngine:
             )
             root.destroy()
             return (result or "").strip()
-        except Exception:
+        except Exception:  # noqa: BLE001 — 可选取名界面：tkinter 缺失 / 非主线程建窗 / 无显示都要退化成空名字，取名失败不能阻断保存
             return ""
 
     def _reset_recording(self, refresh_ts: bool = True) -> None:

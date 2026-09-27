@@ -3,10 +3,10 @@ import unittest
 from unittest.mock import Mock, patch
 
 from core.action_executor import (
-    ActionExecutor,
     INPUT,
     MOUSEEVENTF_MIDDLEDOWN,
     MOUSEEVENTF_RIGHTDOWN,
+    ActionExecutor,
 )
 
 

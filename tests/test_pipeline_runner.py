@@ -2,9 +2,9 @@ import json
 
 import pytest
 
+from core.locator_protocol import create_locator
 from engine.pipeline_runner import PipelineRunner
 from engine.workflow_validator import ValidationError
-from core.locator_protocol import create_locator
 
 
 def _write_workflow(tmp_path, workflow):

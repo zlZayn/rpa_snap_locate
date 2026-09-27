@@ -1,5 +1,6 @@
 import pytest
-from engine.workflow_validator import validate_timeline_events, ValidationError
+
+from engine.workflow_validator import ValidationError, validate_timeline_events
 
 
 def _make_down(index=1, offset_ns=0, **kwargs) -> dict:

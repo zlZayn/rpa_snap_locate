@@ -2,7 +2,7 @@ import logging
 import queue
 import threading
 import time
-from typing import Callable
+from collections.abc import Callable
 
 import mouse
 
@@ -114,8 +114,7 @@ class InputEventRecorder:
                 return
             assert self._origin is not None
             offset_ns = now_ns - self._origin
-            if offset_ns < 0:
-                offset_ns = 0
+            offset_ns = max(offset_ns, 0)
             raw_event = {
                 "type": "screenshot",
                 "region": dict(region),
@@ -152,8 +151,7 @@ class InputEventRecorder:
                     self._capture_error = f"unsupported mouse button recorded: {button}"
                     return
                 offset_ns = now_ns - self._origin
-                if offset_ns < 0:
-                    offset_ns = 0
+                offset_ns = max(offset_ns, 0)
 
                 self._event_counter += 1
                 raw_event = {

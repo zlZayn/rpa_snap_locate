@@ -1,6 +1,6 @@
 import ctypes
-from ctypes import wintypes
 import logging
+from ctypes import wintypes
 
 import pyautogui
 
@@ -94,12 +94,13 @@ class ActionExecutor:
             return target_hwnd
 
         console_hwnd = self._kernel32.GetConsoleWindow()
-        if target_hwnd != console_hwnd:
-            if not self._user32.SetForegroundWindow(target_hwnd):
-                logger.warning(
-                    "could not foreground target window 0x%x",
-                    target_hwnd,
-                )
+        if target_hwnd != console_hwnd and not self._user32.SetForegroundWindow(
+            target_hwnd
+        ):
+            logger.warning(
+                "could not foreground target window 0x%x",
+                target_hwnd,
+            )
 
         self._last_target_hwnd = target_hwnd
         return target_hwnd

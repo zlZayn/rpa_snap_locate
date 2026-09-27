@@ -1,8 +1,9 @@
 import json
 import os
-from datetime import datetime, timezone
-from engine.workflow_validator import validate_timeline_events
+from datetime import UTC, datetime
+
 from config.config_manager import ConfigManager
+from engine.workflow_validator import validate_timeline_events
 
 
 class DataManager:
@@ -16,7 +17,7 @@ class DataManager:
     def new_ts(self) -> str:
         # Microseconds prevent rapid consecutive saves with the same step count
         # from resolving to the same path and overwriting the earlier workflow.
-        return datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        return datetime.now().astimezone().strftime("%Y%m%d_%H%M%S_%f")
 
     def save_workflow(self, steps: list, ts: str, name: str = "") -> str:
         if name:
@@ -26,7 +27,7 @@ class DataManager:
         path = os.path.join(self._workflows_dir, f"{dir_name}.json")
         workflow = {
             "format": "legacy",
-            "created_at": datetime.now().isoformat(),
+            "created_at": datetime.now().astimezone().isoformat(),
             "steps": steps,
         }
         with open(path, "w", encoding="utf-8") as f:
@@ -48,7 +49,7 @@ class DataManager:
         path = os.path.join(self._workflows_dir, f"{dir_name}.json")
         workflow: dict = {
             "format": "timeline",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "timeline": {
                 "clock": "monotonic",
                 "unit": "ns",

@@ -1,14 +1,14 @@
-import sys
-import os
 import glob
+import os
+import sys
 import threading
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config.config_manager import ConfigManager
 from engine.hotkey_registry import HotkeyRegistry
-from engine.recorder_engine import RecorderEngine
 from engine.pipeline_runner import PipelineRunner
+from engine.recorder_engine import RecorderEngine
 from utils.logger_setup import setup_logger
 
 
@@ -67,8 +67,8 @@ def cmd_record():
             try:
                 runner.run(wp)
                 logger.info("【回放】执行完成")
-            except Exception as e:
-                logger.exception("【回放】执行失败：%s", e)
+            except Exception:
+                logger.exception("【回放】执行失败")
 
         t = threading.Thread(target=_run, daemon=True)
         t.start()

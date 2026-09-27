@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Callable
+from collections.abc import Callable
 
 logger = logging.getLogger("rpa_snap_locate.timeline_scheduler")
 

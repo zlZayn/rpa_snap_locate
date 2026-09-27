@@ -1,5 +1,6 @@
 import json
 import os
+
 import pytest
 
 from data.data_manager import DataManager

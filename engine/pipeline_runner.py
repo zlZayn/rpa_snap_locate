@@ -1,13 +1,15 @@
 import json
 import logging
 import os
-from datetime import datetime
 import time as _time
+from datetime import datetime
+
 from PIL import ImageDraw
-from core.locator_protocol import create_locator
-from core.action_executor import ActionExecutor
-from core.perception_provider import PerceptionProvider
+
 from config.config_manager import ConfigManager
+from core.action_executor import ActionExecutor
+from core.locator_protocol import create_locator
+from core.perception_provider import PerceptionProvider
 from engine.timeline_scheduler import TimelineScheduler
 from engine.workflow_validator import validate_timeline_events
 
@@ -182,7 +184,7 @@ class PipelineRunner:
         )
         after_evidence = self._perception.capture_screen()
 
-        evidence_ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        evidence_ts = datetime.now().astimezone().strftime("%Y%m%d_%H%M%S_%f")
         report["evidence_captured_at"] = evidence_ts
 
         if before_evidence:
@@ -212,7 +214,7 @@ class PipelineRunner:
         return img
 
     def _make_run_dir(self, workflow_path: str) -> str:
-        run_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_ts = datetime.now().astimezone().strftime("%Y%m%d_%H%M%S")
         fname = os.path.basename(workflow_path)
         recordings_dir = self._config.get("paths", "recordings_dir")
         stem, ext = os.path.splitext(fname)

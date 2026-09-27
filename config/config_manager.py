@@ -1,11 +1,12 @@
-import yaml
 import os
-from typing import Any
+from typing import Any, ClassVar
+
+import yaml
 
 
 class ConfigManager:
     _instance = None
-    _data: dict = {}
+    _data: ClassVar[dict] = {}
 
     def __new__(cls):
         if cls._instance is None:

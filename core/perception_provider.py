@@ -1,7 +1,8 @@
 import mss
-import pygetwindow as gw
 import pyautogui
+import pygetwindow as gw
 from PIL import Image
+
 from config.config_manager import ConfigManager
 from utils.dpi_calculator import get_system_dpi_scale
 

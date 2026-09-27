@@ -11,10 +11,13 @@
 - 录制：`uv run python main.py`
 - 回放指定文件：`uv run python main.py run data/workflows/<file>.json`
 - 测试：`uv run pytest -q`
+- Lint：`uv run ruff check .`（ruff 默认规则集，列宽默认 88）
+- 格式化：`uv run ruff format .`（`--check` 只看不改）
 - 必须从项目根目录执行（config 中路径为相对路径）
 
-## 验证快照
+## 验证快照（2026-09-27 实测）
 - pytest: 51 passed / 0 failed（`uv run pytest -q --basetemp=".pytest_tmp"`，系统 Temp 目录权限受限需指定项目内临时目录）
+- Ruff: `check` 0 发现；`format --check` 全绿（全量格式化已落地）
 
 ## 待办
 - [ ] 无

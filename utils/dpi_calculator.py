@@ -9,7 +9,7 @@ def get_system_dpi_scale() -> float:
             shcore = ctypes.windll.shcore
             dpi = shcore.GetScaleFactorForDevice(0)
             return dpi / 100.0
-        except Exception:
+        except (AttributeError, OSError):
             return 1.0
     elif system == "Darwin":
         return 2.0
