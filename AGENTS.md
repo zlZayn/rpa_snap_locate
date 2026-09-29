@@ -8,6 +8,8 @@
 - 双件分离：AGENTS.md 只写规则，README.md 只写是什么/怎么改
 
 ## 常用命令
+
+- 本地钩子：`pre-commit install`（每个 clone 一次；本体 `uv tool install pre-commit`）——提交前自动 `ruff check --fix` + `ruff format`；CI（windows-latest）只读跑同一组检查
 - 安装依赖：`uv sync`
 - 录制：`uv run python main.py`
 - 回放指定文件：`uv run python main.py run data/workflows/<file>.json`

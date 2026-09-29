@@ -1,0 +1,45 @@
+# CI —— 只读质检：不写回仓库，不做任何发布动作。
+#
+# 为什么 runner 是 windows-latest（而不是 ubuntu）：
+#   源码里 perception_provider.py 直接 `import mss` / `import pygetwindow`，
+#   hotkey_registry.py 直接 `import keyboard`，而测试会 import 到这些模块。
+#   pygetwindow / keyboard 是 Windows 专属，Linux runner 上会 import 失败 ——
+#   那是环境假红，不是代码缺陷。与 imagora 采用同一策略。
+#
+# 三条判据的单一来源：
+#   - Ruff 版本来自 pyproject.toml 的 [dependency-groups] dev，锁在 uv.lock；
+#   - Python 版本来自仓内 .python-version（由 uv 解析）；
+#   - 安装统一 `uv sync --frozen`：锁文件与 pyproject 不同步时直接红。
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Ruff · Pytest (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies (frozen)
+        run: uv sync --frozen --group dev
+
+      - name: Ruff check
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      # 本仓 tests/ 有 7 个 test_*.py。
+      - name: Pytest
+        run: uv run pytest
