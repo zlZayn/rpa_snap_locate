@@ -1,5 +1,7 @@
 # RPA Snap Locate
 
+[![CI](https://github.com/zlZayn/rpa_snap_locate/actions/workflows/ci.yml/badge.svg)](https://github.com/zlZayn/rpa_snap_locate/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 [English](README.md) | [简体中文](README_zh.md)
 
 轻量级 Windows 鼠标操作录制与回放工具。录一次，以后即可重复执行。
@@ -133,3 +135,15 @@ Windows 下尽量直接启动软件的 `.exe` 文件。
 需要了解内部模块、录制状态、文件格式和回放时间控制时，请阅读[架构文档](docs/ARCHITECTURE.md)。
 
 开发者/维护者备忘（命令、验证快照、已知坑位）见 [AGENTS.md](AGENTS.md)。
+
+---
+
+## 许可
+
+- 本仓基于 [MIT 许可](LICENSE) 发布。
+
+## 贡献
+
+- 本仓为个人项目；问题与建议请走 [Issues](https://github.com/zlZayn/rpa_snap_locate/issues)。
+
+维护者文档地图 → 见 [AGENTS.md](AGENTS.md)。

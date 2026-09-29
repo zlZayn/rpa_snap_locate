@@ -1,5 +1,7 @@
 # RPA Snap Locate
 
+[![CI](https://github.com/zlZayn/rpa_snap_locate/actions/workflows/ci.yml/badge.svg)](https://github.com/zlZayn/rpa_snap_locate/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 [English](README.md) | [简体中文](README_zh.md)
 
 A small Windows tool that records mouse actions and plays them back later.
@@ -133,3 +135,15 @@ This project does not record keyboard input or support dragging. When keyboard i
 For module relationships, recording states, file formats, and playback timing, read the [architecture guide](docs/ARCHITECTURE.md).
 
 Developer and maintainer notes (commands, verification snapshot, known pitfalls): see [AGENTS.md](AGENTS.md).
+
+---
+
+## License
+
+- Released under the [MIT License](LICENSE).
+
+## Contributing
+
+- Personal project; questions and suggestions welcome via [Issues](https://github.com/zlZayn/rpa_snap_locate/issues).
+
+Maintainer docs map → [AGENTS.md](AGENTS.md).
